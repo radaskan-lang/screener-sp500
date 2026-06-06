@@ -592,89 +592,79 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             conv_clr  = str(row.get("Conv_Color", "#64748b"))
             score_fin = row.get("Score_Final", 0)
             rr        = row.get("RR_Ratio", None)
-            signals_on  = str(row.get("Conv_On", ""))
-            signals_off = str(row.get("Conv_Off", ""))
+            rr_str    = str(rr) if rr else "—"
+            rr_color  = "#00ff88" if rr and float(rr) >= 2 else "#fbbf24"
+            signals_on_list  = str(row.get("Conv_On", "") or "").split(" | ")
+            signals_off_list = str(row.get("Conv_Off", "") or "").split(" | ")
+            entree    = str(row.get("Entree", "—") or "—")
+            stop      = str(row.get("Stop", "—") or "—")
+            target    = str(row.get("Target", "—") or "—")
+            risque    = str(row.get("Risque_Pct", "—") or "—")
+            gain      = str(row.get("Gain_Pct", "—") or "—")
+            atr_pct   = str(row.get("ATR_Pct", "—") or "—")
+            support   = str(row.get("Support", "—") or "—")
+            resist    = str(row.get("Resistance", "—") or "—")
 
-            # Choisir le style de carte selon le rang
             if rank == 1:
-                card_class = "trade-card-gold"
-                rank_color = "#ffd700"
+                border_color = "#ffd700"
+                bg_color = "#1a130022"
             elif n_sig >= 5:
-                card_class = "trade-card-green"
-                rank_color = "#00ff88"
+                border_color = "#00ff88"
+                bg_color = "#00ff880a"
             else:
-                card_class = "trade-card"
-                rank_color = "#4a90d0"
+                border_color = "#1e4060"
+                bg_color = "#0b142288"
 
-            st.markdown(f"""
-            <div class="{card_class}">
+            # ── En-tête de la carte ──
+            st.markdown(
+                f'<div style="background:{bg_color};border:2px solid {border_color};border-radius:14px;padding:20px 24px;margin:10px 0;">',
+                unsafe_allow_html=True
+            )
 
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-                    <span class="rank-badge" style="color:{rank_color}">#{rank}</span>
-                    <span class="ticker-badge">{row['Ticker']}</span>
-                    <span style="color:#94a3b8;font-size:0.85rem;">{row['Sector']}</span>
-                    <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:0.8rem;color:{conv_clr};">
-                        {conv_lbl}
-                    </span>
-                </div>
+            # Ligne titre
+            col_rank, col_ticker, col_conv = st.columns([1, 3, 3])
+            col_rank.markdown(f"<div style='font-family:Space Mono,monospace;font-size:2rem;font-weight:700;color:{border_color};'>#{rank}</div>", unsafe_allow_html=True)
+            col_ticker.markdown(f"<div style='font-family:Space Mono,monospace;font-size:1.2rem;font-weight:700;color:#00ff88;'>{row['Ticker']}</div><div style='color:#64748b;font-size:0.85rem;'>{row['Sector']}</div>", unsafe_allow_html=True)
+            col_conv.markdown(f"<div style='font-family:Space Mono,monospace;font-size:1.1rem;color:{conv_clr};'>{conv_bar} {n_sig}/6</div><div style='color:{conv_clr};font-size:0.8rem;'>{conv_lbl}</div>", unsafe_allow_html=True)
 
-                <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;flex-wrap:wrap;">
-                    <div>
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Convergence</div>
-                        <div class="conv-bar" style="color:{conv_clr};">{conv_bar}</div>
-                        <div style="font-size:11px;color:{conv_clr};font-family:'Space Mono',monospace;">{n_sig}/6 signaux</div>
-                    </div>
-                    <div style="border-left:1px solid #1e3a5f;padding-left:20px;">
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Score Final</div>
-                        <div style="font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;color:{conv_clr};">{score_fin}</div>
-                        <div style="font-size:11px;color:#64748b;">Score composite</div>
-                    </div>
-                    <div style="border-left:1px solid #1e3a5f;padding-left:20px;">
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Prix actuel</div>
-                        <div style="font-family:'Space Mono',monospace;font-size:1.3rem;font-weight:700;color:#e0f0ff;">${row['Prix']}</div>
-                        <div style="font-size:11px;color:#64748b;">RSI {row['RSI']} | Vol {row['Vol_Ratio']}x</div>
-                    </div>
-                </div>
+            # Score + Prix
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Score Final", f"{score_fin}/100")
+            c2.metric("Prix actuel", f"${row['Prix']}")
+            c3.metric("RSI | Volume", f"{row['RSI']} | {row['Vol_Ratio']}x")
 
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #00ff8833;">
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🎯 ENTRÉE (Lundi)</div>
-                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#e0f0ff;">${row.get('Entree','—')}</div>
-                    </div>
-                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #f8717133;">
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🛑 STOP-LOSS</div>
-                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#f87171;">${row.get('Stop','—')} <span style="font-size:0.75rem;">(-{row.get('Risque_Pct','—')}%)</span></div>
-                    </div>
-                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #00ff8833;">
-                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🏆 VENTE (Jeu/Ven)</div>
-                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#00ff88;">${row.get('Target','—')} <span style="font-size:0.75rem;">(+{row.get('Gain_Pct','—')}%)</span></div>
-                    </div>
-                </div>
+            st.markdown("---")
 
-                <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
-                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
-                        📊 R/R: <strong style="color:{'#00ff88' if rr and rr>=2 else '#fbbf24'}">{rr}:1</strong>
-                    </div>
-                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
-                        ATR: <strong>{row.get('ATR_Pct','—')}%</strong>
-                    </div>
-                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
-                        Support: <strong>${row.get('Support','—')}</strong>
-                    </div>
-                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
-                        Résistance: <strong>${row.get('Resistance','—')}</strong>
-                    </div>
-                </div>
+            # Plan de trade
+            col_e, col_s, col_t = st.columns(3)
+            col_e.markdown(f"**🎯 ENTRÉE** *(Lundi)*\n\n`${entree}`")
+            col_s.markdown(f"**🛑 STOP-LOSS**\n\n`${stop}` **(-{risque}%)**")
+            col_t.markdown(f"**🏆 VENTE** *(Jeu/Ven)*\n\n`${target}` **(+{gain}%)**")
 
-                <div style="margin-bottom:8px;">
-                    <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Signaux actifs</div>
-                    <div style="font-size:0.82rem;color:#86efac;line-height:1.8;">{signals_on.replace(' | ','<br>') if signals_on else '—'}</div>
-                </div>
+            # R/R + détails
+            st.markdown(
+                f"📊 **R/R:** `{rr_str}:1` &nbsp;|&nbsp; "
+                f"ATR: `{atr_pct}%` &nbsp;|&nbsp; "
+                f"Support: `${support}` &nbsp;|&nbsp; "
+                f"Résistance: `${resist}`"
+            )
 
-                {f'<div style="margin-top:6px;"><div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Signaux manquants</div><div style="font-size:0.82rem;color:#f87171;line-height:1.8;">{signals_off.replace(chr(124)+" ","<br>")}</div></div>' if signals_off else ''}
+            # Signaux actifs
+            if signals_on_list and signals_on_list[0]:
+                st.markdown("**Signaux actifs :**")
+                for s in signals_on_list:
+                    if s.strip():
+                        st.markdown(f"<span style='color:#86efac;font-size:0.85rem;'>  {s.strip()}</span>", unsafe_allow_html=True)
 
-            </div>
-            """, unsafe_allow_html=True)
+            # Signaux manquants
+            if signals_off_list and signals_off_list[0]:
+                st.markdown("**Signaux manquants :**")
+                for s in signals_off_list:
+                    if s.strip():
+                        st.markdown(f"<span style='color:#f87171;font-size:0.85rem;'>  {s.strip()}</span>", unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("")
 
     # ── MÉTRIQUES GLOBALES ──
     st.markdown("---")
