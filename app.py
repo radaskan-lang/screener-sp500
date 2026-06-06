@@ -5,8 +5,20 @@ from datetime import datetime
 import openpyxl
 from io import BytesIO
 
-# ── TICKERS ─────────────────────────────
-TICKERS = ["AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA"]
+# ── TICKERS 
+import pandas as pd
+
+def get_sp500_tickers():
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    table = pd.read_html(url)[0]
+    tickers = table["Symbol"].tolist()
+
+    # correction pour Yahoo Finance (BRK.B → BRK-B, etc.)
+    tickers = [t.replace(".", "-") for t in tickers]
+
+    return tickers
+
+TICKERS = get_sp500_tickers()
 
 # ── RSI ────────────────────────────────
 def rsi(series, period=14):
