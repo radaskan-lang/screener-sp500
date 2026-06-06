@@ -5,74 +5,74 @@ from datetime import datetime
 import openpyxl
 from io import BytesIO
 
-── TICKERS ─────────────────────────────
+# ── TICKERS ─────────────────────────────
 TICKERS = ["AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA"]
 
-── RSI ────────────────────────────────
+# ── RSI ────────────────────────────────
 def rsi(series, period=14):
-delta = series.diff()
-gain = delta.where(delta > 0, 0).rolling(period).mean()
-loss = -delta.where(delta < 0, 0).rolling(period).mean()
-rs = gain / loss.replace(0, 1)
-return 100 - (100 / (1 + rs.iloc[-1]))
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0).rolling(period).mean()
+    loss = -delta.where(delta < 0, 0).rolling(period).mean()
+    rs = gain / loss.replace(0, 1)
+    return 100 - (100 / (1 + rs.iloc[-1]))
 
-── FETCH DATA ─────────────────────────
+# ── FETCH DATA ─────────────────────────
 def fetch(ticker):
-t = yf.Ticker(ticker)
-hist = t.history(period="1y")
+    t = yf.Ticker(ticker)
+    hist = t.history(period="1y")
 
-if hist.empty or len(hist) < 50:
-return None
+    if hist.empty or len(hist) < 50:
+        return None
 
-close = hist["Close"]
+    close = hist["Close"]
 
-price = close.iloc[-1]
-ma50 = close.rolling(50).mean().iloc[-1]
-ma200 = close.rolling(200).mean().iloc[-1]
+    price = close.iloc[-1]
+    ma50 = close.rolling(50).mean().iloc[-1]
+    ma200 = close.rolling(200).mean().iloc[-1]
 
-return {
-"Ticker": ticker,
-"Prix": price,
-"MA50": ma50,
-"MA200": ma200,
-"RSI": rsi(close)
-}
+    return {
+        "Ticker": ticker,
+        "Prix": price,
+        "MA50": ma50,
+        "MA200": ma200,
+        "RSI": rsi(close)
+    }
 
-── SCORE ───────────────────────────────
+# ── SCORE ───────────────────────────────
 def score(row):
-s = 0
-if row["Prix"] > row["MA50"]: s += 1
-if row["MA50"] > row["MA200"]: s += 1
-if 40 < row["RSI"] < 65: s += 1
-return s
+    s = 0
+    if row["Prix"] > row["MA50"]: s += 1
+    if row["MA50"] > row["MA200"]: s += 1
+    if 40 < row["RSI"] < 65: s += 1
+    return s
 
-── EXCEL EXPORT ────────────────────────
+# ── EXCEL EXPORT ────────────────────────
 def to_excel(df):
-output = BytesIO()
-with pd.ExcelWriter(output, engine="openpyxl") as writer:
-df.to_excel(writer, index=False, sheet_name="Screener")
-return output.getvalue()
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Screener")
+    return output.getvalue()
 
-── APP ────────────────────────────────
+# ── APP ────────────────────────────────
 st.title("📊 Screener S&P 500 (Cloud Version)")
 
 if st.button("🔄 Lancer analyse"):
-data = []
+    data = []
 
-for t in TICKERS:
-d = fetch(t)
-if d:
-d["Score"] = score(d)
-data.append(d)
+    for t in TICKERS:
+        d = fetch(t)
+        if d:
+            d["Score"] = score(d)
+            data.append(d)
 
-df = pd.DataFrame(data)
+    df = pd.DataFrame(data)
 
-st.dataframe(df.sort_values("Score", ascending=False))
+    st.dataframe(df.sort_values("Score", ascending=False))
 
-excel = to_excel(df)
+    excel = to_excel(df)
 
-st.download_button(
-"📥 Télécharger Excel",
-data=excel,
-file_name=f"screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-)
+    st.download_button(
+        "📥 Télécharger Excel",
+        data=excel,
+        file_name=f"screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    )
