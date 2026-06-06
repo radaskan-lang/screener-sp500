@@ -18,6 +18,7 @@ from claude_scorer import claude_score_batch, verdict_color, conviction_badge
 from earnings_sector import check_earnings, get_sector_strength, sector_bonus_score
 from gap_detector import detect_gaps
 from relative_strength import calc_relative_strength, get_spy_data
+from support_resistance import calc_sr_levels
 
 # ─────────────────────────────────────────────
 # 📊 BACKTEST INLINE — 6 STRATÉGIES DE SORTIE
@@ -402,6 +403,8 @@ def fetch(ticker):
         gap_data = detect_gaps(hist)
         # Relative Strength vs SPY
         rs_data  = calc_relative_strength(hist)
+        # Support & Résistance 52 semaines
+        sr_data  = calc_sr_levels(hist)
 
         info       = t.info
         revenue_gr = info.get("revenueGrowth", None)
@@ -485,6 +488,19 @@ def fetch(ticker):
             "RS_Perf5d":       rs_data["perf_5d"],
             "SPY_Perf5d":      rs_data["spy_perf_5d"],
             "RS_Outperform":   rs_data["outperform"],
+            # Support & Résistance 52 semaines
+            "SR_High52w":      sr_data["high_52w"],
+            "SR_Low52w":       sr_data["low_52w"],
+            "SR_Position":     sr_data["position_pct"],
+            "SR_DistHigh":     sr_data["dist_to_high"],
+            "SR_DistLow":      sr_data["dist_to_low"],
+            "SR_Signal":       sr_data["signal"],
+            "SR_Badge":        sr_data["badge"],
+            "SR_Score":        sr_data["score"],
+            "SR_Quality":      sr_data["setup_quality"],
+            "SR_StopNatural":  sr_data["stop_natural"],
+            "SR_TargetNatural":sr_data["target_natural"],
+            "SR_Round":        sr_data["nearest_round"],
         }
     except Exception:
         return None
@@ -585,6 +601,18 @@ def ai_score(row):
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
+
+    # Bonus Support/Résistance 52 semaines (max +22, min -15)
+    try:
+        sr_score  = int(row.get("SR_Score", 0) or 0)
+        sr_signal = str(row.get("SR_Signal") or "")
+        sr_qual   = str(row.get("SR_Quality", "") or "")
+        if sr_score != 0:
+            score += sr_score
+            if sr_signal and sr_signal not in ["None","—",""]:
+                reasons.append(f"📐 {sr_signal[:45]}")
     except Exception:
         pass
 
@@ -1324,6 +1352,33 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                 except Exception:
                     pass
 
+            # Support & Résistance 52 semaines
+            sr_badge    = str(row.get("SR_Badge", "") or "")
+            sr_high     = row.get("SR_High52w", None)
+            sr_low      = row.get("SR_Low52w", None)
+            sr_pos      = row.get("SR_Position", None)
+            sr_stop_nat = row.get("SR_StopNatural", None)
+            sr_tgt_nat  = row.get("SR_TargetNatural", None)
+
+            if sr_badge and sr_badge not in ["—", ""]:
+                sr_color = "#00ff88" if (row.get("SR_Score", 0) or 0) >= 10 else \
+                           "#fbbf24" if (row.get("SR_Score", 0) or 0) >= 0 else "#f87171"
+                st.markdown(
+                    f"**📐 S/R 52 sem :** <span style='color:{sr_color};'>{sr_badge}</span>",
+                    unsafe_allow_html=True
+                )
+                info_parts = []
+                if sr_high: info_parts.append(f"High 52w: `${sr_high}`")
+                if sr_low:  info_parts.append(f"Low 52w: `${sr_low}`")
+                if sr_pos is not None: info_parts.append(f"Position: `{sr_pos}%` du range")
+                if info_parts:
+                    st.markdown(" &nbsp;|&nbsp; ".join(info_parts))
+                if sr_stop_nat and sr_tgt_nat:
+                    st.markdown(
+                        f"🛡️ Stop S/R: `${sr_stop_nat}` &nbsp;|&nbsp; "
+                        f"🎯 Target S/R: `${sr_tgt_nat}`"
+                    )
+
             # Relative Strength
             rs_badge    = str(row.get("RS_Badge", "") or "")
             rs_trend_v  = str(row.get("RS_Trend", "") or "")
@@ -1522,6 +1577,8 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     cols_display = [
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
+        "SR_Badge","SR_Signal","SR_Position","SR_DistHigh","SR_Quality",
+        "SR_High52w","SR_Low52w","SR_StopNatural","SR_TargetNatural",
         "RS_Badge","RS_Trend","RS_5d","RS_10d","RS_20d","RS_Perf5d","SPY_Perf5d",
         "Earnings_Badge","Earnings_Date","Earnings_Risk",
         "Gap_Badge","Gap_Signal","Gap_Score","Gap_Support",
