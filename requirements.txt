@@ -1,4 +1,7 @@
 streamlit
 yfinance
 pandas
+numpy
 openpyxl
+anthropic
+plotly
