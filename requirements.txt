@@ -3,3 +3,4 @@ yfinance
 pandas
 openpyxl
 requests
+conda
