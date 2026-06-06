@@ -198,19 +198,17 @@ def fetch(ticker):
             "MACD":          round(macd_line, 3),
             "MACD_Signal":   round(macd_signal, 3),
             "MACD_Hist":     round(macd_hist, 3),
-            "BB_Width":      round(bb_bandwidth, 1),
+            # BB gardé comme info seulement, pas dans le score
             "BB_Pct":        round(bb_pct, 2),
             "Vol_Ratio":     round(vol_ratio, 2),
-            "Price_Up":      price_up,
-            "PE":            round(pe_ratio, 1) if pe_ratio else None,
+            # Fondamentaux — seulement Rev_Growth utile en swing
             "Rev_Growth":    round(revenue_gr * 100, 1) if revenue_gr else None,
-            "Net_Margin":    round(net_margin * 100, 1) if net_margin else None,
             # Patterns
             "Top_Pattern":   patterns_data["top_pattern"],
             "Patterns":      patterns_data["summary"],
             "Pattern_Score": patterns_data["bonus_score"],
             "Pattern_Badge": pattern_badge(patterns_data["bonus_score"]),
-            # R/R
+            # R/R — filtre indépendant, pas dans le score
             "Entree":        rr_data["entry"],
             "Stop":          rr_data["stop"],
             "Target":        rr_data["target"],
@@ -222,7 +220,6 @@ def fetch(ticker):
             "Support":       rr_data["support"],
             "Resistance":    rr_data["resistance"],
             "RR_Quality":    rr_data["quality"],
-            "RR_Confidence": rr_data["confidence"],
             "RR_Badge":      risk_badge(rr_data["rr_ratio"], rr_data["risk_pct"]),
             # Indicateurs avancés
             "TTM_Signal":    adv["ttm"]["signal"],
@@ -264,104 +261,111 @@ def fetch_parallel(tickers, max_workers=10):
 # 🧠 SCORE IA
 # ─────────────────────────────
 def ai_score(row):
+    """
+    Score technique pur — optimisé swing trading 5 jours.
+
+    Supprimé  : Bollinger position, Price_Up, R/R dans score, fondamentaux lourds
+    Conservé  : Trend, RSI, MACD, Volume, Patterns, Avancés
+    Total base : 100 pts (avant bonus patterns + avancés plafonnés à 100)
+    """
     score   = 0
     reasons = []
 
     try:
-        price      = float(row.get("Prix", 0) or 0)
-        ma50       = float(row.get("MA50", 0) or 0)
-        ma200      = float(row.get("MA200", 0) or 0)
-        rsi_val    = float(row.get("RSI", 50) or 50)
-        macd_hist  = float(row.get("MACD_Hist", 0) or 0)
-        bb_pct     = float(row.get("BB_Pct", 0.5) or 0.5)
-        vol_ratio  = float(row.get("Vol_Ratio", 1) or 1)
-        price_up   = bool(row.get("Price_Up", False))
-        pe         = row.get("PE", None)
+        price     = float(row.get("Prix", 0) or 0)
+        ma50      = float(row.get("MA50", 0) or 0)
+        ma200     = float(row.get("MA200", 0) or 0)
+        rsi_val   = float(row.get("RSI", 50) or 50)
+        macd_hist = float(row.get("MACD_Hist", 0) or 0)
+        vol_ratio = float(row.get("Vol_Ratio", 1) or 1)
         rev_growth = row.get("Rev_Growth", None)
-        net_margin = row.get("Net_Margin", None)
     except Exception:
         return 0, ["Erreur calcul"]
 
-    # Trend (30 pts)
+    # ── Trend MA50 / MA200 (35 pts) ──
+    # Le critère le plus important en swing — direction claire
     if price > ma50 > ma200:
-        score += 30; reasons.append("Trend haussière forte")
+        score += 35; reasons.append("✅ Trend haussière forte (prix>MA50>MA200)")
+    elif price > ma50 and price > ma200:
+        score += 25; reasons.append("✅ Prix au-dessus des deux MAs")
     elif price > ma200:
-        score += 18; reasons.append("Trend positive")
+        score += 15; reasons.append("~ Au-dessus MA200 seulement")
     else:
-        score += 3;  reasons.append("Trend faible")
+        score += 0;  reasons.append("❌ Sous MA50 et MA200")
 
-    # RSI (20 pts)
-    if 40 <= rsi_val <= 60:
-        score += 20; reasons.append("RSI idéal")
-    elif 60 < rsi_val <= 70:
-        score += 12; reasons.append("RSI légèrement élevé")
+    # ── RSI (25 pts) ──
+    # Zone idéale swing : 45-65 (ni survendu ni suracheté)
+    if 45 <= rsi_val <= 65:
+        score += 25; reasons.append(f"✅ RSI idéal swing ({rsi_val})")
+    elif 65 < rsi_val <= 72:
+        score += 15; reasons.append(f"~ RSI momentum élevé ({rsi_val})")
+    elif 35 <= rsi_val < 45:
+        score += 18; reasons.append(f"~ RSI zone rebond ({rsi_val})")
     elif rsi_val < 35:
-        score += 10; reasons.append("Survente RSI")
-    elif rsi_val > 70:
-        score += 3;  reasons.append("Surachat RSI")
+        score += 10; reasons.append(f"⚠️ RSI survente ({rsi_val})")
+    elif rsi_val > 72:
+        score += 5;  reasons.append(f"❌ RSI surachat ({rsi_val})")
     else:
-        score += 8
+        score += 10
 
-    # MACD (15 pts)
-    if macd_hist > 0:
-        score += 15; reasons.append("MACD haussier")
+    # ── MACD Histogramme (20 pts) ──
+    # Histogramme positif ET croissant = momentum qui s'accélère
+    if macd_hist > 0.5:
+        score += 20; reasons.append(f"✅ MACD fort haussier ({round(macd_hist,3)})")
+    elif macd_hist > 0:
+        score += 14; reasons.append(f"~ MACD haussier ({round(macd_hist,3)})")
+    elif macd_hist > -0.3:
+        score += 5;  reasons.append(f"~ MACD légèrement baissier")
     else:
-        score += 3;  reasons.append("MACD baissier")
+        score += 0;  reasons.append(f"❌ MACD baissier ({round(macd_hist,3)})")
 
-    # Volume (10 pts)
-    if vol_ratio > 1.5 and price_up:
-        score += 10; reasons.append("Volume fort haussier")
-    elif vol_ratio > 1.2 and price_up:
-        score += 7;  reasons.append("Volume élevé haussier")
+    # ── Volume (20 pts) ──
+    # Volume sans Price_Up — ratio seul est plus fiable sur 1 semaine
+    if vol_ratio >= 2.0:
+        score += 20; reasons.append(f"✅ Volume très fort ({vol_ratio}x)")
+    elif vol_ratio >= 1.5:
+        score += 15; reasons.append(f"✅ Volume fort ({vol_ratio}x)")
+    elif vol_ratio >= 1.1:
+        score += 10; reasons.append(f"~ Volume normal+ ({vol_ratio}x)")
     elif vol_ratio < 0.7:
-        score += 3;  reasons.append("Volume faible")
+        score += 2;  reasons.append(f"❌ Volume faible ({vol_ratio}x)")
     else:
-        score += 5
+        score += 6
 
-    # Bollinger (10 pts)
-    if 0.2 <= bb_pct <= 0.8:
-        score += 10; reasons.append("Position Bollinger saine")
-    elif bb_pct < 0.1:
-        score += 7;  reasons.append("Proche bande basse Bollinger")
-    else:
-        score += 3
+    # ── Momentum fondamental léger (5 pts max) ──
+    # Seulement croissance revenus — indicateur momentum, pas value
+    try:
+        if rev_growth and float(rev_growth) > 10:
+            score += 5; reasons.append(f"✅ Croissance revenus +{rev_growth}%")
+        elif rev_growth and float(rev_growth) > 5:
+            score += 2; reasons.append(f"~ Croissance +{rev_growth}%")
+    except Exception:
+        pass
 
-    # Fondamentaux (15 pts)
-    fund_pts = 0
-    if pe and 5 < pe < 30:
-        fund_pts += 5; reasons.append(f"PE attractif ({pe}x)")
-    if rev_growth and rev_growth > 5:
-        fund_pts += 5; reasons.append(f"Croissance +{rev_growth}%")
-    if net_margin and net_margin > 10:
-        fund_pts += 5; reasons.append(f"Marge {net_margin}%")
-    score += fund_pts
+    # ── Bonus patterns (plafonné à 30 pts) ──
+    try:
+        pattern_bonus = int(row.get("Pattern_Score", 0) or 0)
+        if pattern_bonus > 0:
+            bonus = min(pattern_bonus, 30)
+            score += bonus
+            top = str(row.get("Top_Pattern", "") or "")
+            if top and top != "—":
+                reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
 
-    # Bonus patterns
-    pattern_bonus = row.get("Pattern_Score", 0)
-    if pattern_bonus > 0:
-        score += pattern_bonus
-        top = row.get("Top_Pattern", "")
-        if top and top != "—":
-            reasons.append(f"Pattern: {top}")
-
-    # Bonus R/R
-    rr = row.get("RR_Ratio", None)
-    if rr and rr >= 2.5:
-        score += 5; reasons.append(f"R/R {rr}:1")
-    elif rr and rr >= 2.0:
-        score += 3; reasons.append(f"R/R {rr}:1")
-
-    # Bonus indicateurs avancés
+    # ── Bonus indicateurs avancés (plafonné à 30 pts) ──
     try:
         adv_score = int(row.get("ADV_Score", 0) or 0)
         if adv_score > 0:
-            score += adv_score
-            ttm_sig = row.get("TTM_Signal") or ""
-            div_sig = row.get("DIV_Signal") or ""
-            ema_sig = row.get("EMA_Signal") or ""
-            if ttm_sig: reasons.append(f"TTM: {str(ttm_sig)[:30]}")
-            if div_sig: reasons.append(f"Div: {str(div_sig)[:30]}")
-            if ema_sig: reasons.append(f"EMA: {str(ema_sig)[:30]}")
+            bonus = min(adv_score, 30)
+            score += bonus
+            ttm_sig = str(row.get("TTM_Signal") or "")
+            div_sig = str(row.get("DIV_Signal") or "")
+            ema_sig = str(row.get("EMA_Signal") or "")
+            if ttm_sig and ttm_sig != "None": reasons.append(f"✅ {ttm_sig[:35]}")
+            if div_sig and div_sig != "None": reasons.append(f"✅ {div_sig[:35]}")
+            if ema_sig and ema_sig != "None": reasons.append(f"✅ {ema_sig[:35]}")
     except Exception:
         pass
 
@@ -747,9 +751,9 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     st.markdown("---")
     st.markdown(f"### 🏆 Résultats ({len(df_filtered)} actions)")
     cols_display = [
-        "Ticker","Sector","Prix",
+        "Ticker","Sector","Prix","MA50","MA200",
+        "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
-        "RSI","MACD_Hist","Vol_Ratio",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
         "Pattern_Badge","Top_Pattern","Pattern_Score",
         "AI Score","AI Score Ajusté","AI Signal Ajuste","AI Reasons"
