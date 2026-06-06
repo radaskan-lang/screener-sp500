@@ -6,23 +6,25 @@ from io import BytesIO
 import time
 
 # ─────────────────────────────
-# 📌 S&P 500 (SOURCE STABLE)
+# 📌 S&P 500 — SOURCE WIKIPEDIA (fiable)
 # ─────────────────────────────
 @st.cache_data(ttl=86400)
 def get_sp500():
-    url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
-    df = pd.read_csv(url)
-    return [t.replace(".", "-") for t in df["Symbol"].tolist()]
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    tables = pd.read_html(url)
+    df = tables[0]
+    tickers = df["Symbol"].tolist()
+    # Wikipedia utilise des points, Yahoo Finance utilise des tirets
+    return [t.replace(".", "-") for t in tickers]
 
 
 # ─────────────────────────────
-# 📊 RSI  — CORRECTION: division par zéro gérée proprement
+# 📊 RSI
 # ─────────────────────────────
 def calc_rsi(series, period=14):
     delta = series.diff()
     gain = delta.where(delta > 0, 0).rolling(period).mean()
     loss = -delta.where(delta < 0, 0).rolling(period).mean()
-    # Évite la division par zéro en remplaçant 0 par un epsilon
     loss_safe = loss.clip(lower=1e-10)
     rs = gain / loss_safe
     return 100 - (100 / (1 + rs.iloc[-1]))
@@ -50,7 +52,6 @@ def fetch(ticker):
             "Prix":   price,
             "MA50":   ma50,
             "MA200":  ma200,
-            # CORRECTION: appel de la fonction renommée calc_rsi
             "RSI":    calc_rsi(close),
         }
 
@@ -65,10 +66,9 @@ def ai_score(row):
     score   = 0
     reasons = []
 
-    price = row["Prix"]
-    ma50  = row["MA50"]
-    ma200 = row["MA200"]
-    # CORRECTION: renommé rsi_val pour éviter l'écrasement du nom de fonction
+    price   = row["Prix"]
+    ma50    = row["MA50"]
+    ma200   = row["MA200"]
     rsi_val = row["RSI"]
 
     # Trend
@@ -133,9 +133,14 @@ def to_excel(df):
 # ─────────────────────────────
 st.title("📊 S&P 500 IA Screener — VERSION STABLE PRO")
 
-tickers = get_sp500()
+# Chargement des tickers avec message d'erreur clair
+try:
+    tickers = get_sp500()
+    st.success(f"✅ {len(tickers)} actions chargées depuis Wikipedia")
+except Exception as e:
+    st.error(f"❌ Impossible de charger la liste S&P 500 : {e}")
+    st.stop()
 
-# Mode rapide anti-crash
 if st.checkbox("⚡ Mode rapide (100 actions)"):
     tickers = tickers[:100]
 
@@ -158,7 +163,6 @@ if st.button("🔄 Lancer analyse IA"):
 
             rows.append(data)
 
-        # Progression + anti-surcharge
         progress.progress((i + 1) / len(tickers))
         time.sleep(0.15)
 
@@ -174,7 +178,6 @@ if st.button("🔄 Lancer analyse IA"):
         st.subheader("📥 Export Excel")
         excel = to_excel(df)
 
-        # CORRECTION: mime type ajouté pour le bon téléchargement Excel
         st.download_button(
             "Télécharger Excel",
             data=excel,
