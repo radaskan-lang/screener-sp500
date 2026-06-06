@@ -602,174 +602,170 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
         if df_bt.empty:
             st.error("❌ Aucun trade simulé.")
         else:
-            # Debug — vérifier les colonnes disponibles
             pnl_cols = [c for c in df_bt.columns if c.startswith("pnl_")]
-            if not pnl_cols:
-                st.error("❌ Colonnes de stratégies manquantes. Vérifie que backtest.py est bien la nouvelle version.")
-                st.write("Colonnes disponibles:", list(df_bt.columns))
-                st.stop()
-
-            stats = backtest_summary(df_bt)
+            stats    = backtest_summary(df_bt)
             total_trades = len(df_bt)
 
-            # Filtrer — garder seulement les clés A-F
+            # Détecter quelle version du backtest est utilisée
             valid_keys = [k for k in stats.keys() if k in ["A","B","C","D","E","F"]]
-            if not valid_keys:
-                st.error("❌ Résultats par stratégie non trouvés.")
-                st.write("Clés dans stats:", list(stats.keys()))
-                st.write("Colonnes df:", pnl_cols)
-                st.stop()
+            is_new_backtest = len(valid_keys) > 0
 
-            stats = {k: stats[k] for k in valid_keys}
-            st.markdown(f"### 📈 Comparatif 6 Stratégies — {total_trades} trades simulés")
+            if is_new_backtest:
+                # ── NOUVEAU BACKTEST : 6 stratégies ──
+                stats = {k: stats[k] for k in valid_keys}
+                st.markdown(f"### 📈 Comparatif 6 Stratégies — {total_trades} trades simulés")
 
-            strat_labels = {
-                "A": "A — +5% fixe",
-                "B": "B — +7% fixe",
-                "C": "C — Vendredi",
-                "D": "D — Stop 3%",
-                "E": "E — Stop 5%",
-                "F": "F — 50%+Stop 3%",
-            }
+                strat_labels = {
+                    "A": "A — +5% fixe",
+                    "B": "B — +7% fixe",
+                    "C": "C — Vendredi",
+                    "D": "D — Stop 3%",
+                    "E": "E — Stop 5%",
+                    "F": "F — 50%+Stop 3%",
+                }
 
-            try:
-                best_strat = max(
-                    stats.keys(),
-                    key=lambda s: float(stats[s].get("expectancy", -99) or -99)
-                )
-            except Exception:
-                best_strat = list(stats.keys())[0]
-
-            # Tableau comparatif simple — évite tous les problèmes de types
-            rows_display = []
-            for strat, data in stats.items():
                 try:
-                    crown = " 👑" if strat == best_strat else ""
-                    rows_display.append({
-                        "Stratégie":      strat_labels.get(strat, strat) + crown,
-                        "Trades":         str(data.get("total", 0)),
-                        "Win Rate":       str(data.get("win_rate", 0)) + "%",
-                        "Expectancy":     str(data.get("expectancy", 0)) + "%",
-                        "Profit Factor":  str(data.get("profit_factor", 0)),
-                        "Gain moyen":     "+" + str(data.get("avg_win", 0)) + "%",
-                        "Perte moyenne":  str(data.get("avg_loss", 0)) + "%",
-                        "PnL Total":      str(data.get("total_pnl", 0)) + "%",
-                        "Max Pertes Consec": str(data.get("max_consec_loss", 0)),
-                    })
+                    best_strat = max(
+                        stats.keys(),
+                        key=lambda s: float(stats[s].get("expectancy", -99) or -99)
+                    )
+                except Exception:
+                    best_strat = list(stats.keys())[0]
+
+                rows_display = []
+                for strat, data in stats.items():
+                    try:
+                        crown = " 👑" if strat == best_strat else ""
+                        rows_display.append({
+                            "Strategie":     strat_labels.get(strat, strat) + crown,
+                            "Trades":        str(data.get("total", 0)),
+                            "Win Rate":      str(data.get("win_rate", 0)) + "%",
+                            "Expectancy":    str(data.get("expectancy", 0)) + "%",
+                            "Profit Factor": str(data.get("profit_factor", 0)),
+                            "Gain moyen":    "+" + str(data.get("avg_win", 0)) + "%",
+                            "Perte moyenne": str(data.get("avg_loss", 0)) + "%",
+                            "PnL Total":     str(data.get("total_pnl", 0)) + "%",
+                            "Max Pertes":    str(data.get("max_consec_loss", 0)),
+                        })
+                    except Exception:
+                        pass
+
+                if rows_display:
+                    st.dataframe(
+                        pd.DataFrame(rows_display).set_index("Strategie"),
+                        use_container_width=True
+                    )
+
+                st.markdown("---")
+                selected_strat = st.selectbox(
+                    "📊 Voir le détail d'une stratégie",
+                    options=list(stats.keys()),
+                    format_func=lambda s: strat_labels.get(s, s),
+                    index=0
+                )
+
+                if selected_strat not in stats:
+                    selected_strat = list(stats.keys())[0]
+
+                sd = stats[selected_strat]
+                st.markdown(f"#### Détail — {strat_labels.get(selected_strat, selected_strat)}")
+
+                try:
+                    d1,d2,d3,d4 = st.columns(4)
+                    d1.metric("Meilleur trade",    f"+{sd.get('best', 0)}%")
+                    d2.metric("Pire trade",         f"{sd.get('worst', 0)}%")
+                    d3.metric("Max pertes consec.", str(sd.get("max_consec_loss", 0)))
+                    d4.metric("PnL cumulé",         f"{sd.get('total_pnl', 0)}%")
                 except Exception:
                     pass
 
-            if rows_display:
-                st.dataframe(
-                    pd.DataFrame(rows_display).set_index("Stratégie"),
-                    use_container_width=True
-                )
+                try:
+                    score_stats = sd.get("score_stats") or {}
+                    if score_stats:
+                        st.markdown("**Performance par niveau de score IA :**")
+                        rows_ss = []
+                        for slabel, sdata in score_stats.items():
+                            rows_ss.append({
+                                "Score":    str(slabel),
+                                "Win Rate": str(sdata.get("win_rate", 0)) + "%",
+                                "PnL moy":  str(sdata.get("avg_pnl", 0)) + "%",
+                                "N trades": str(sdata.get("n", 0)),
+                            })
+                        st.dataframe(pd.DataFrame(rows_ss).set_index("Score"), use_container_width=True)
+                except Exception:
+                    pass
 
-            st.markdown("---")
-            selected_strat = st.selectbox(
-                "📊 Voir le détail d'une stratégie",
-                options=list(stats.keys()),
-                format_func=lambda s: strat_labels.get(s, s),
-                index=0
-            )
+                pnl_col = f"pnl_{selected_strat}"
+                res_col = f"result_{selected_strat}"
 
-            # Sécuriser l'accès — selected_strat doit être une clé valide
-            if selected_strat not in stats:
-                selected_strat = list(stats.keys())[0]
+                if pnl_col in df_bt.columns:
+                    bt_tab1, bt_tab2 = st.tabs(["Courbe capital", "Win Rate/Score"])
+                    with bt_tab1:
+                        try:
+                            df_s2 = df_bt.sort_values("week").copy()
+                            df_s2["PnL cumule"] = df_s2[pnl_col].fillna(0).cumsum()
+                            st.line_chart(df_s2["PnL cumule"])
+                        except Exception as e:
+                            st.error(f"Graphique indisponible: {e}")
+                    with bt_tab2:
+                        try:
+                            df_bt2 = df_bt.copy()
+                            df_bt2["score_bucket"] = pd.cut(df_bt2["score"],
+                                bins=[0,40,50,60,70,80,101],
+                                labels=["<40","40-50","50-60","60-70","70-80",">=80"])
+                            wr_s = df_bt2.groupby("score_bucket", observed=True).apply(
+                                lambda x: round(len(x[x[res_col]=="WIN"])/max(len(x),1)*100, 1)
+                            ).reset_index()
+                            wr_s.columns = ["Score","Win Rate %"]
+                            st.bar_chart(wr_s.set_index("Score"))
+                        except Exception as e:
+                            st.error(f"Graphique indisponible: {e}")
 
-            sd = stats[selected_strat]
+            else:
+                # ── ANCIEN BACKTEST : version simple ──
+                st.info("ℹ️ Ancienne version du backtest détectée — mets à jour backtest.py pour les 6 stratégies.")
+                st.markdown(f"### 📈 Résultats — {total_trades} trades simulés")
 
-            st.markdown(f"#### Détail — {strat_labels.get(selected_strat, selected_strat)}")
+                m1,m2,m3,m4 = st.columns(4)
+                m1.metric("Win Rate",      f"{stats.get('win_rate', 0)}%")
+                m2.metric("Profit Factor", f"{stats.get('profit_factor', 0)}")
+                m3.metric("Gain moyen",    f"+{stats.get('avg_win', 0)}%")
+                m4.metric("PnL Total",     f"{stats.get('total_pnl', 0)}%")
 
-            # Métriques détail — tout en string pour éviter les erreurs de type
-            try:
-                d1,d2,d3,d4 = st.columns(4)
-                d1.metric("Meilleur trade",          f"+{sd.get('best', 0)}%")
-                d2.metric("Pire trade",              f"{sd.get('worst', 0)}%")
-                d3.metric("Pertes consec. max",      str(sd.get("max_consec_loss", 0)))
-                d4.metric("PnL cumulé",              f"{sd.get('total_pnl', 0)}%")
-            except Exception:
-                st.write(sd)
+                if "pnl_pct" in df_bt.columns:
+                    df_sorted = df_bt.sort_values("week").copy()
+                    df_sorted["PnL cumule"] = df_sorted["pnl_pct"].fillna(0).cumsum()
+                    st.line_chart(df_sorted["PnL cumule"])
 
-            # Score stats
-            try:
-                score_stats = sd.get("score_stats") or {}
-                if score_stats:
-                    st.markdown("**Performance par niveau de score IA :**")
-                    rows_ss = []
-                    for slabel, sdata in score_stats.items():
-                        rows_ss.append({
-                            "Score":    str(slabel),
-                            "Win Rate": str(sdata.get("win_rate", 0)) + "%",
-                            "PnL moy":  str(sdata.get("avg_pnl", 0)) + "%",
-                            "N trades": str(sdata.get("n", 0)),
-                        })
-                    st.dataframe(pd.DataFrame(rows_ss).set_index("Score"), use_container_width=True)
-            except Exception:
-                pass
-
-            pnl_col = f"pnl_{selected_strat}"
-            res_col = f"result_{selected_strat}"
-
-            if pnl_col in df_bt.columns and res_col in df_bt.columns:
-                bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Courbe capital","Distribution PnL","Win Rate/Score"])
-
-                with bt_tab1:
-                    try:
-                        df_s2 = df_bt.sort_values("week").copy()
-                        df_s2["PnL cumule"] = df_s2[pnl_col].fillna(0).cumsum()
-                        st.line_chart(df_s2["PnL cumule"])
-                    except Exception as e:
-                        st.error(f"Graphique indisponible: {e}")
-
-                with bt_tab2:
-                    try:
-                        wins_d = df_bt[df_bt[res_col]=="WIN"][pnl_col].dropna()
-                        loss_d = df_bt[df_bt[res_col]=="LOSS"][pnl_col].dropna()
-                        if not wins_d.empty:
-                            st.markdown("**Gains**")
-                            st.bar_chart(wins_d.value_counts(bins=10).sort_index())
-                        if not loss_d.empty:
-                            st.markdown("**Pertes**")
-                            st.bar_chart(loss_d.value_counts(bins=10).sort_index())
-                    except Exception as e:
-                        st.error(f"Graphique indisponible: {e}")
-
-                with bt_tab3:
-                    try:
-                        df_bt2 = df_bt.copy()
-                        df_bt2["score_bucket"] = pd.cut(df_bt2["score"],
-                            bins=[0,40,50,60,70,80,101],
-                            labels=["<40","40-50","50-60","60-70","70-80",">=80"])
-                        wr_s = df_bt2.groupby("score_bucket", observed=True).apply(
-                            lambda x: round(len(x[x[res_col]=="WIN"])/max(len(x),1)*100, 1)
-                        ).reset_index()
-                        wr_s.columns = ["Score","Win Rate %"]
-                        st.bar_chart(wr_s.set_index("Score"))
-                    except Exception as e:
-                        st.error(f"Graphique indisponible: {e}")
-
+            # ── EXPORT (commun aux deux versions) ──
             bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
                 df_bt.to_excel(writer, index=False, sheet_name="Trades")
                 try:
+                    strat_labels_export = {
+                        "A": "A — +5% fixe", "B": "B — +7% fixe",
+                        "C": "C — Vendredi", "D": "D — Stop 3%",
+                        "E": "E — Stop 5%",  "F": "F — 50%+Stop 3%",
+                    }
                     rows = []
                     for s, d in stats.items():
-                        rows.append({
-                            "Strategie":      strat_labels.get(s, s),
-                            "Win Rate %":     d.get("win_rate", 0),
-                            "Expectancy %":   d.get("expectancy", 0),
-                            "Profit Factor":  d.get("profit_factor", 0),
-                            "Gain Moy %":     d.get("avg_win", 0),
-                            "Perte Moy %":    d.get("avg_loss", 0),
-                            "PnL Total %":    d.get("total_pnl", 0),
-                            "Max Pertes":     d.get("max_consec_loss", 0),
-                        })
-                    pd.DataFrame(rows).to_excel(writer, index=False, sheet_name="Comparatif")
+                        if s in ["A","B","C","D","E","F"]:
+                            rows.append({
+                                "Strategie":    strat_labels_export.get(s, s),
+                                "Win Rate %":   d.get("win_rate", 0),
+                                "Expectancy %": d.get("expectancy", 0),
+                                "Profit Factor":d.get("profit_factor", 0),
+                                "Gain Moy %":   d.get("avg_win", 0),
+                                "Perte Moy %":  d.get("avg_loss", 0),
+                                "PnL Total %":  d.get("total_pnl", 0),
+                                "Max Pertes":   d.get("max_consec_loss", 0),
+                            })
+                    if rows:
+                        pd.DataFrame(rows).to_excel(writer, index=False, sheet_name="Comparatif")
                 except Exception:
                     pass
-            st.download_button("⬇️ Télécharger comparatif 6 stratégies", data=bt_excel.getvalue(),
-                file_name=f"backtest_6strat_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            st.download_button("⬇️ Télécharger résultats backtest", data=bt_excel.getvalue(),
+                file_name=f"backtest_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 st.markdown("---")
