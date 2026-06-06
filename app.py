@@ -24,7 +24,7 @@ TICKERS = [
 
     "ABT","DHR","TXN","VZ","NEE","PM","ORCL","RTX","HON","UPS","IBM","SPGI",
 
-    "GE","CAT","T","INTU","AMAT",
+    "GE","CAT","T","INTU","AMAT",]
 
 
 # ─────────────────────────────
