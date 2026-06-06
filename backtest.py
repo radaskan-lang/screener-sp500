@@ -378,33 +378,35 @@ def backtest_summary(df_trades):
 
         # Stats par niveau de score
         score_stats = {}
-        for smin, smax, slabel in [(80,101,"≥80"),(60,80,"60-79"),(0,60,"<60")]:
+        for smin, smax, slabel in [(80,101,">=80"),(60,80,"60-79"),(0,60,"<60")]:
             sub = df_s[(df_s["score"]>=smin)&(df_s["score"]<smax)]
             if len(sub) > 0:
                 sw = len(sub[sub[result_col]=="WIN"])
+                wr_val = round(sw/len(sub)*100, 1)
+                ap_val = round(sub[pnl_col].mean(), 2)
                 score_stats[slabel] = {
-                    "n":        len(sub),
-                    "win_rate": round(sw/len(sub)*100, 1),
-                    "avg_pnl":  round(sub[pnl_col].mean(), 2),
+                    "n":        int(len(sub)),
+                    "win_rate": float(wr_val),
+                    "avg_pnl":  float(ap_val) if ap_val == ap_val else 0.0,
                 }
 
         summary[strat] = {
-            "label":        label,
-            "total":        total,
-            "wins":         wins,
-            "losses":       losses,
-            "win_rate":     win_rate,
-            "avg_win":      avg_win,
-            "avg_loss":     avg_loss,
-            "avg_pnl":      avg_pnl,
-            "total_pnl":    total_pnl,
-            "best":         best,
-            "worst":        worst,
-            "profit_factor":profit_factor,
-            "expectancy":   expectancy,
-            "max_consec_loss": max_consec,
-            "score_stats":  score_stats,
-            "pnl_series":   df_trades.sort_values("week")[pnl_col].tolist(),
+            "label":          str(label),
+            "total":          int(total),
+            "wins":           int(wins),
+            "losses":         int(losses),
+            "win_rate":       float(win_rate),
+            "avg_win":        float(avg_win) if avg_win == avg_win else 0.0,
+            "avg_loss":       float(avg_loss) if avg_loss == avg_loss else 0.0,
+            "avg_pnl":        float(avg_pnl) if avg_pnl == avg_pnl else 0.0,
+            "total_pnl":      float(total_pnl),
+            "best":           float(best) if best == best else 0.0,
+            "worst":          float(worst) if worst == worst else 0.0,
+            "profit_factor":  float(profit_factor),
+            "expectancy":     float(expectancy),
+            "max_consec_loss":int(max_consec),
+            "score_stats":    score_stats,
+            "pnl_series":     [float(x) for x in df_trades.sort_values("week")[pnl_col].fillna(0).tolist()],
         }
 
     return summary
