@@ -587,16 +587,13 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
             bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Distribution PnL","Win Rate par score","Courbe de capital"])
 
             with bt_tab1:
-                fig_pnl = px.histogram(df_bt, x="pnl_pct", nbins=40, color="result",
-                    color_discrete_map={"WIN":"#00ff88","LOSS":"#f87171","BREAKEVEN":"#fbbf24"},
-                    title="Distribution des PnL")
-                fig_pnl.update_layout(
-                    paper_bgcolor="#0a0e1a",
-                    plot_bgcolor="#111827",
-                    font_color="#e2e8f0",
-                    title_font_color="#00ff88"
-                )
-                st.plotly_chart(fig_pnl, use_container_width=True)
+                # Histogramme natif Streamlit
+                wins_data  = df_bt[df_bt["result"]=="WIN"]["pnl_pct"]
+                loss_data  = df_bt[df_bt["result"]=="LOSS"]["pnl_pct"]
+                st.markdown("**Gains (WIN)**")
+                st.bar_chart(wins_data.value_counts(bins=15).sort_index())
+                st.markdown("**Pertes (LOSS)**")
+                st.bar_chart(loss_data.value_counts(bins=15).sort_index())
 
             with bt_tab2:
                 df_bt["score_bucket"] = pd.cut(df_bt["score"],
@@ -606,45 +603,18 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                     lambda x: round(len(x[x["result"]=="WIN"])/len(x)*100, 1)
                 ).reset_index()
                 wr_by_score.columns = ["Score","Win Rate %"]
-                fig_wr = px.bar(
-                    wr_by_score, x="Score", y="Win Rate %",
-                    color="Win Rate %",
-                    color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
-                    title="Win Rate % par score (seuil rentable = 50%)"
-                )
-                fig_wr.update_layout(
-                    paper_bgcolor="#0a0e1a",
-                    plot_bgcolor="#111827",
-                    font_color="#e2e8f0",
-                    title_font_color="#00ff88"
-                )
-                st.plotly_chart(fig_wr, use_container_width=True)
+                wr_by_score = wr_by_score.set_index("Score")
+                st.markdown("**Win Rate % par niveau de score** *(seuil rentable = 50%)*")
+                st.bar_chart(wr_by_score)
 
             with bt_tab3:
                 df_sorted = df_bt.sort_values("week").copy()
-                df_sorted["cumul"] = df_sorted["pnl_pct"].cumsum()
-                df_sorted["index"] = range(len(df_sorted))
-                fig_cap = go.Figure()
-                fig_cap.add_trace(go.Scatter(
-                    x=df_sorted["index"],
-                    y=df_sorted["cumul"],
-                    mode="lines",
-                    name="PnL cumulé %",
-                    line=dict(color="#00ff88", width=2),
-                    fill="tozeroy",
-                    fillcolor="#00ff8815"
-                ))
-                fig_cap.update_layout(
-                    title="Courbe de capital — PnL cumulé %",
-                    paper_bgcolor="#0a0e1a",
-                    plot_bgcolor="#111827",
-                    font_color="#e2e8f0",
-                    title_font_color="#00ff88"
-                )
-                st.plotly_chart(fig_cap, use_container_width=True)
+                df_sorted["PnL cumulé %"] = df_sorted["pnl_pct"].cumsum()
+                df_sorted = df_sorted.reset_index(drop=True)
+                st.markdown("**Courbe de capital — PnL cumulé %**")
+                st.line_chart(df_sorted["PnL cumulé %"])
 
-            # Export
-            bt_excel = BytesIO()
+            # Export            bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
                 df_bt.to_excel(writer, index=False, sheet_name="Trades")
             st.download_button("⬇️ Télécharger résultats backtest", data=bt_excel.getvalue(),
