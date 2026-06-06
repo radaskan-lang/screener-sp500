@@ -13,7 +13,7 @@ from market_filter import get_market_status, apply_market_filter, market_advice
 from pre_filter import run_prefilter, PREFILTER_CONFIG
 from advanced_indicators import detect_advanced_signals
 from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
-from backtest import run_backtest, backtest_summary
+from volume_signals import detect_volume_anomaly
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -190,6 +190,7 @@ def fetch(ticker):
         patterns_data = detect_all_patterns(hist)
         rr_data       = calc_risk_reward(hist)
         adv           = detect_advanced_signals(hist)
+        vol_anom      = detect_volume_anomaly(hist)
 
         info       = t.info
         revenue_gr = info.get("revenueGrowth", None)
@@ -239,6 +240,14 @@ def fetch(ticker):
             "ADV_Badge":     adv["badge"],
             "ADV_Summary":   adv["summary"],
             "ADV_Active":    adv["n_active"],
+            # Volume anormal
+            "VOL_Score":     vol_anom["score"],
+            "VOL_Badge":     vol_anom["badge"],
+            "VOL_Signal":    vol_anom["top_signal"],
+            "VOL_Ratio":     vol_anom["vol_ratio"],
+            "VOL_52W_Rank":  vol_anom["vol_52w_rank"],
+            "VOL_Bullish":   vol_anom["is_bullish"],
+            "VOL_Summary":   vol_anom["summary"],
         }
     except Exception:
         return None
@@ -339,6 +348,18 @@ def ai_score(row):
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
+
+    # Bonus volume anormal (max 25 pts)
+    try:
+        vol_score   = int(row.get("VOL_Score", 0) or 0)
+        vol_bullish = bool(row.get("VOL_Bullish", True))
+        vol_signal  = str(row.get("VOL_Signal") or "")
+        if vol_score > 0 and vol_bullish:
+            score += min(vol_score, 25)
+            if vol_signal and vol_signal not in ["None", "—", ""]:
+                reasons.append(f"✅ {vol_signal[:40]}")
     except Exception:
         pass
 
@@ -443,25 +464,32 @@ with st.sidebar:
                               help="Force min 4/6 signaux + R/R 2.0 + score 70+")
 
     if strict_mode:
-        min_signals = 4
-        min_rr_conv = 2.0
+        min_signals  = 4
+        min_rr_conv  = 2.0
+        min_score    = 70
         st.markdown("""<div style='background:#00ff8812;border:1px solid #00ff8833;
             border-radius:6px;padding:10px;font-size:0.78rem;color:#86efac;margin-top:6px;'>
             🔒 <strong>Mode strict actif</strong><br>
             ✅ Min 4/6 signaux convergents<br>
             ✅ R/R minimum 2.0:1<br>
-            ✅ Score ajusté minimum 70
+            ✅ Score ajusté minimum 70<br>
+            ✅ Gap ouverture max 1.5%
         </div>""", unsafe_allow_html=True)
     else:
-        min_signals = st.slider("Signaux convergents min", 2, 6, 4,
-                                help="4+ = recommandé pour win rate optimal")
-        min_rr_conv = st.slider("R/R minimum", 1.0, 3.0, 1.5, step=0.1)
+        min_signals  = st.slider("Signaux convergents min", 2, 6, 3,
+                                 help="4+ = recommandé pour win rate optimal")
+        min_rr_conv  = st.slider("R/R minimum", 1.0, 3.0, 1.5, step=0.1)
+        min_score    = st.slider("Score min", 0, 100, 50)
 
     # Indicateur visuel win rate estimé
     wr_est = {2:"~40%", 3:"~48%", 4:"~58%", 5:"~67%", 6:"~75%"}
-    sig_display = 4 if strict_mode else min_signals
-    st.markdown(f"<div style='color:#fbbf24;font-size:0.8rem;margin-top:4px;'>📊 Win rate estimé avec {sig_display}/6 signaux : <strong>{wr_est.get(sig_display,'—')}</strong></div>",
-                unsafe_allow_html=True)
+    sig_display = min_signals
+    st.markdown(
+        f"<div style='color:#fbbf24;font-size:0.8rem;margin-top:4px;'>"
+        f"📊 Win rate estimé : <strong>{wr_est.get(sig_display,'—')}</strong> "
+        f"avec {sig_display}/6 signaux</div>",
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
     st.markdown("### 🤖 Claude IA")
@@ -470,8 +498,6 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🔍 Filtres tableau")
-    min_score = st.slider("Score min", 0, 100, 70 if True else 50,
-                          help="70+ recommandé en mode strict")
     signal_filter = st.multiselect(
         "Signaux",
         ["🟢 STRONG BUY","🟢 BUY","🟡 HOLD","🔴 AVOID","🟡 HOLD ⚠️"],
@@ -740,10 +766,12 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
         min_rr=min_rr_conv
     )
 
-    # Filtre score strict sur le rapport
+    # Filtres strict sur le rapport final
     if not report.empty:
         ai_col = "AI Score Ajuste" if "AI Score Ajuste" in report.columns else "AI Score"
         report = report[report[ai_col] >= score_min_rapport]
+        # En mode strict : exiger minimum 4/6
+        report = report[report["Conv_N"] >= min_signals]
 
     if report.empty:
         st.warning(f"⚠️ Aucun titre avec {min_signals}+ signaux convergents. Réduire le filtre dans la sidebar.")
@@ -807,6 +835,19 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             col_s.markdown(f"**🛑 STOP-LOSS**\n\n`${stop}` **(-{risque}%)**")
             col_t.markdown(f"**🏆 VENTE** *(Jeu/Ven)*\n\n`${target}` **(+{gain}%)**")
 
+            # Règle de gap — avertissement si strict mode
+            if strict_mode and entree and entree != "—":
+                try:
+                    entree_f = float(entree)
+                    prix_f   = float(row.get("Prix", entree_f))
+                    gap_max  = round(entree_f * 1.015, 2)
+                    st.markdown(
+                        f"⚠️ **Règle gap :** N'entrer que si ouverture lundi ≤ **${gap_max}** "
+                        f"(+1.5% max vs entrée). Au-dessus → passer au trade suivant."
+                    )
+                except Exception:
+                    pass
+
             # R/R + détails
             st.markdown(
                 f"📊 **R/R:** `{rr_str}:1` &nbsp;|&nbsp; "
@@ -814,6 +855,24 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                 f"Support: `${support}` &nbsp;|&nbsp; "
                 f"Résistance: `${resist}`"
             )
+
+            # Volume anormal
+            vol_badge  = str(row.get("VOL_Badge", "") or "")
+            vol_signal = str(row.get("VOL_Signal", "") or "")
+            vol_ratio_v= row.get("VOL_Ratio", None)
+            vol_rank   = row.get("VOL_52W_Rank", None)
+            if vol_badge and vol_badge != "—":
+                vol_info = f"**Volume :** {vol_badge}"
+                if vol_ratio_v:
+                    vol_info += f" — `{vol_ratio_v}x` la moyenne"
+                if vol_rank:
+                    vol_info += f" — Top `{round(100-float(vol_rank),1)}%` annuel"
+                st.markdown(vol_info)
+                if vol_signal and vol_signal not in ["None","—",""]:
+                    st.markdown(
+                        f"<span style='color:#00ff88;font-size:0.85rem;'>  {vol_signal}</span>",
+                        unsafe_allow_html=True
+                    )
 
             # Signaux actifs
             if signals_on_list and signals_on_list[0]:
@@ -835,20 +894,23 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     # ── MÉTRIQUES GLOBALES ──
     st.markdown("---")
     st.markdown("### 📈 Vue d'ensemble")
-    ai_col = "AI Score Ajuste"
+    ai_col  = "AI Score Ajuste"
     sig_col = "AI Signal Ajuste"
-    col1,col2,col3,col4,col5,col6,col7 = st.columns(7)
+    vol_anormal = len(df[df["VOL_Score"] >= 15]) if "VOL_Score" in df.columns else 0
+    col1,col2,col3,col4,col5,col6,col7,col8 = st.columns(8)
     for col, val, label in zip(
-        [col1,col2,col3,col4,col5,col6,col7],
-        [len(df),
-         len(df[df[sig_col]=="🟢 STRONG BUY"]),
-         len(df[df[sig_col]=="🟢 BUY"]),
-         len(df[df[sig_col]=="🟡 HOLD"]),
-         len(df[df[sig_col]=="🔴 AVOID"]),
-         len(report),
-         len(df[df.get("Conv_N",pd.Series([0]*len(df)))>=4]) if "Conv_N" in df.columns else 0,
+        [col1,col2,col3,col4,col5,col6,col7,col8],
+        [
+            len(df),
+            len(df[df[sig_col]=="🟢 STRONG BUY"]),
+            len(df[df[sig_col]=="🟢 BUY"]),
+            len(df[df[sig_col]=="🟡 HOLD"]),
+            len(df[df[sig_col]=="🔴 AVOID"]),
+            len(report),
+            len(df[df.get("Conv_N", pd.Series([0]*len(df))) >= 4]) if "Conv_N" in df.columns else 0,
+            vol_anormal,
         ],
-        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv ≥4"]
+        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv≥4","Vol Anormal"]
     ):
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value">{val}</div>
@@ -918,6 +980,7 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     cols_display = [
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
+        "VOL_Badge","VOL_Signal","VOL_Ratio","VOL_52W_Rank",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
         "Pattern_Badge","Top_Pattern","Pattern_Score",
