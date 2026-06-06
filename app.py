@@ -10,6 +10,7 @@ import anthropic
 from pattern_detection import detect_all_patterns, pattern_badge
 from risk_manager import calc_risk_reward, risk_badge
 from market_filter import get_market_status, apply_market_filter, market_advice
+from pre_filter import run_prefilter, prefilter_summary, PREFILTER_CONFIG
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -41,8 +42,14 @@ h1, h2, h3 { font-family: 'Space Mono', monospace; color: #00ff88 !important; }
     border-radius: 8px !important; padding: 12px 24px !important;
 }
 .market-banner {
-    border-radius: 10px; padding: 16px 20px;
-    margin-bottom: 20px; font-size: 0.9rem; line-height: 1.8;
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;
+    font-size: 0.9rem; line-height: 1.8;
+}
+.prefilter-banner {
+    background: #0d1a2a; border: 1px solid #1e3a5f;
+    border-left: 4px solid #4a90d0; border-radius: 8px;
+    padding: 12px 18px; margin: 10px 0; font-size: 0.85rem;
+    font-family: 'Space Mono', monospace;
 }
 .ai-analysis-box {
     background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
@@ -77,7 +84,7 @@ section[data-testid="stSidebar"] { background: #0d1117 !important; border-right:
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────
-# 📌 S&P 500 TICKERS
+# 📌 S&P 500 COMPLET
 # ─────────────────────────────
 SP500_TICKERS = [
     "MMM","AOS","ABT","ABBV","ACN","ADBE","AMD","AES","AFL","A","APD","ABNB","AKAM","ALB","ARE",
@@ -152,7 +159,7 @@ def calc_volume_signal(volume, close):
     return vol_ratio, price_up
 
 # ─────────────────────────────
-# 📈 FETCH
+# 📈 FETCH COMPLET
 # ─────────────────────────────
 def fetch(ticker):
     try:
@@ -233,7 +240,7 @@ def fetch_parallel(tickers, max_workers=10):
             if data:
                 results.append(data)
             progress.progress(done / len(tickers))
-            status.markdown(f"⚡ `{done}/{len(tickers)}` actions analysées...")
+            status.markdown(f"⚡ Analyse complète `{done}/{len(tickers)}`...")
         status.empty()
     return results
 
@@ -331,29 +338,26 @@ def ai_signal(score):
 def claude_analysis(row, api_key, market_status):
     try:
         client  = anthropic.Anthropic(api_key=api_key)
-        pe_str  = f"{row['PE']}x"         if row['PE']        else "N/A"
-        rr_str  = f"{row['RR_Ratio']}:1"  if row['RR_Ratio'] else "N/A"
+        pe_str  = f"{row['PE']}x"        if row['PE']        else "N/A"
+        rr_str  = f"{row['RR_Ratio']}:1" if row['RR_Ratio'] else "N/A"
         regime  = market_status.get("regime", "INCONNU")
 
         prompt = f"""Tu es un trader spécialisé en swing trading (lundi achat -> vendredi vente).
-Contexte marché global cette semaine : {regime}
-SPY : {market_status.get('spy_vs_ma50','N/A')}% vs MA50 | QQQ : {market_status.get('qqq_vs_ma50','N/A')}% vs MA50
-{market_status.get('vix_label','VIX N/A')}
+Contexte marché : {regime} | SPY vs MA50: {market_status.get('spy_vs_ma50','N/A')}% | QQQ vs MA50: {market_status.get('qqq_vs_ma50','N/A')}% | {market_status.get('vix_label','VIX N/A')}
 
-Analyse ce titre (6-8 lignes max) :
 Ticker: {row['Ticker']} | Secteur: {row['Sector']}
 Prix: ${row['Prix']} | Entree: ${row['Entree']} | Stop: ${row['Stop']} | Target: ${row['Target']}
-Ratio R/R: {rr_str} | Risque: {row['Risque_Pct']}% | Gain potentiel: {row['Gain_Pct']}%
-RSI: {row['RSI']} | MACD Hist: {row['MACD_Hist']} | ATR: {row['ATR_Pct']}%
-Score IA: {row['AI Score']}/100 | Signal ajuste: {row.get('AI Signal Ajuste', row['AI Signal'])}
-Pattern: {row['Top_Pattern']} | Qualite setup: {row['RR_Quality']}
+R/R: {rr_str} | Risque: {row['Risque_Pct']}% | Gain: {row['Gain_Pct']}%
+RSI: {row['RSI']} | MACD: {row['MACD_Hist']} | ATR: {row['ATR_Pct']}% | Volume: {row['Vol_Ratio']}x
+Score: {row['AI Score']}/100 | Signal: {row.get('AI Signal Ajuste', row['AI Signal'])}
+Pattern: {row['Top_Pattern']} | Setup: {row['RR_Quality']}
 
-Donne :
-1) VERDICT en tenant compte du contexte marché ({regime})
-2) Confirmes-tu l'entree a ${row['Entree']} et le stop a ${row['Stop']} ?
-3) Argument principal pour ce swing cette semaine
-4) Risque principal à surveiller
-Sois direct, chiffré, sans disclaimer."""
+En 6 lignes max :
+1) VERDICT (ACHETER / ATTENDRE / EVITER) avec contexte marché {regime}
+2) Confirmes-tu entree ${row['Entree']} et stop ${row['Stop']} ?
+3) Argument principal cette semaine
+4) Risque principal
+Direct, chiffré, sans disclaimer."""
 
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -379,25 +383,48 @@ def to_excel(df):
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
     st.markdown("---")
-    mode_rapide = st.checkbox("⚡ Mode rapide (100 actions)", value=True)
-    nb_workers  = st.slider("🔀 Threads parallèles", 5, 20, 10)
+
+    st.markdown("### ⚡ Pré-filtre")
+    use_prefilter = st.checkbox("Activer le pré-filtre S&P 500 complet", value=True,
+                                 help="Analyse les 503 actions en 2 passes. Plus lent mais zéro opportunité ratée.")
+    if use_prefilter:
+        st.markdown("<div style='color:#4a90d0;font-size:0.78rem;'>✅ S&P 500 complet (503 actions)<br>Passe 1 : filtre rapide<br>Passe 2 : analyse complète</div>",
+                    unsafe_allow_html=True)
+        with st.expander("⚙️ Critères du pré-filtre"):
+            min_price    = st.number_input("Prix minimum ($)", value=10, min_value=1)
+            max_price    = st.number_input("Prix maximum ($)", value=2000, min_value=50)
+            min_volume   = st.number_input("Volume moyen minimum", value=500000, step=100000)
+            min_momentum = st.slider("Momentum 20j minimum (%)", -10, 5, -2)
+            above_ma50   = st.checkbox("Doit être au-dessus MA50", value=True)
+            PREFILTER_CONFIG.update({
+                "min_price": min_price, "max_price": max_price,
+                "min_volume": min_volume, "min_momentum_20d": min_momentum,
+                "require_above_ma50": above_ma50,
+            })
+    else:
+        mode_rapide = st.checkbox("⚡ Mode rapide (100 actions)", value=True)
+
+    st.markdown("---")
+    nb_workers = st.slider("🔀 Threads parallèles", 5, 20, 10)
+
     st.markdown("---")
     st.markdown("### 🤖 Analyse Claude IA")
-    api_key    = st.text_input("Clé API Anthropic", type="password",
-                                help="console.anthropic.com")
+    api_key    = st.text_input("Clé API Anthropic", type="password")
     use_claude = st.checkbox("Activer l'analyse Claude", value=False)
+
     st.markdown("---")
-    st.markdown("### 🔍 Filtres")
+    st.markdown("### 🔍 Filtres résultats")
     min_score     = st.slider("Score IA minimum", 0, 100, 50)
     min_rr        = st.slider("R/R minimum", 0.0, 3.0, 1.5, step=0.1)
     max_risk      = st.slider("Risque max (%)", 1.0, 10.0, 5.0, step=0.5)
     signal_filter = st.multiselect(
-        "Signaux à afficher",
+        "Signaux",
         ["🟢 STRONG BUY", "🟢 BUY", "🟡 HOLD", "🔴 AVOID", "🟡 HOLD ⚠️"],
         default=["🟢 STRONG BUY", "🟢 BUY"]
     )
     only_patterns = st.checkbox("🔍 Avec patterns seulement", value=False)
     only_good_rr  = st.checkbox("📐 R/R >= 2.0 seulement", value=False)
+
     st.markdown("---")
     st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro<br>Données via Yahoo Finance</div>",
                 unsafe_allow_html=True)
@@ -406,10 +433,10 @@ with st.sidebar:
 # 🚀 MAIN
 # ─────────────────────────────
 st.markdown("# 📊 S&P 500 IA Screener Pro")
-st.markdown("<div style='color:#64748b;margin-bottom:1.5rem;'>Analyse technique · Patterns · R/R · Filtre Marché · Claude IA</div>",
+st.markdown("<div style='color:#64748b;margin-bottom:1.5rem;'>Analyse technique · Patterns · R/R · Pré-filtre · Marché Global · Claude IA</div>",
             unsafe_allow_html=True)
 
-# ── BANDEAU MARCHÉ GLOBAL (toujours visible) ──
+# ── BANDEAU MARCHÉ GLOBAL ──
 with st.spinner("Vérification du marché global..."):
     market_status = get_market_status()
 
@@ -418,64 +445,98 @@ color  = market_status["color"]
 emoji  = market_status["emoji"]
 
 st.markdown(f"""
-<div class="market-banner" style="background: {color}11; border: 1px solid {color}44; border-left: 5px solid {color};">
-    <strong style="color:{color}; font-size:1.1rem;">{emoji} MARCHÉ {regime}</strong>
+<div class="market-banner" style="background:{color}11;border:1px solid {color}44;border-left:5px solid {color};">
+    <strong style="color:{color};font-size:1.1rem;">{emoji} MARCHÉ {regime}</strong>
     &nbsp;—&nbsp; {market_status['message']}
     <br>
-    <span style="color:#94a3b8; font-size:0.82rem; font-family:'Space Mono',monospace;">
+    <span style="color:#94a3b8;font-size:0.82rem;font-family:'Space Mono',monospace;">
         {market_status['detail']}
     </span>
 </div>
 """, unsafe_allow_html=True)
 
-# Conseils marché
-advice_list = market_advice(market_status)
-with st.expander("💡 Conseils de trading pour ce contexte de marché"):
+with st.expander("💡 Conseils de trading pour ce contexte"):
+    advice_list = market_advice(market_status)
     cols = st.columns(2)
     for i, advice in enumerate(advice_list):
         cols[i % 2].markdown(f"<div class='advice-box'>{advice}</div>", unsafe_allow_html=True)
 
-    # Détails SPY / QQQ / VIX
-    c1, c2, c3, c4 = st.columns(4)
-    spy_color = "#00ff88" if market_status.get("spy_vs_ma50", 0) >= 0 else "#f87171"
-    qqq_color = "#00ff88" if market_status.get("qqq_vs_ma50", 0) >= 0 else "#f87171"
-
-    c1.markdown(f"""<div class="metric-card">
-        <div class="metric-value" style="color:{spy_color}">
-            {('+' if market_status.get('spy_vs_ma50',0)>=0 else '')}{market_status.get('spy_vs_ma50','—')}%
-        </div>
-        <div class="metric-label">SPY vs MA50</div>
-    </div>""", unsafe_allow_html=True)
-
-    c2.markdown(f"""<div class="metric-card">
-        <div class="metric-value" style="color:{qqq_color}">
-            {('+' if market_status.get('qqq_vs_ma50',0)>=0 else '')}{market_status.get('qqq_vs_ma50','—')}%
-        </div>
-        <div class="metric-label">QQQ vs MA50</div>
-    </div>""", unsafe_allow_html=True)
-
+    c1,c2,c3,c4 = st.columns(4)
+    spy_color = "#00ff88" if market_status.get("spy_vs_ma50",0) >= 0 else "#f87171"
+    qqq_color = "#00ff88" if market_status.get("qqq_vs_ma50",0) >= 0 else "#f87171"
     vix_val   = market_status.get("vix", None)
     vix_color = "#00ff88" if vix_val and vix_val < 20 else "#fbbf24" if vix_val and vix_val < 30 else "#f87171"
-    c3.markdown(f"""<div class="metric-card">
-        <div class="metric-value" style="color:{vix_color}">{vix_val if vix_val else '—'}</div>
-        <div class="metric-label">VIX</div>
-    </div>""", unsafe_allow_html=True)
-
     spy_rsi   = market_status.get("spy_rsi", None)
     rsi_color = "#00ff88" if spy_rsi and 40 <= spy_rsi <= 65 else "#fbbf24"
-    c4.markdown(f"""<div class="metric-card">
-        <div class="metric-value" style="color:{rsi_color}">{spy_rsi if spy_rsi else '—'}</div>
-        <div class="metric-label">RSI SPY</div>
-    </div>""", unsafe_allow_html=True)
 
-st.markdown(f"<div style='color:#00ff88;margin:1rem 0;'>✅ <b>{len(SP500_TICKERS[:100] if True else SP500_TICKERS)}</b> actions prêtes à analyser</div>",
+    for col, val, label, clr in [
+        (c1, f"{'+' if market_status.get('spy_vs_ma50',0)>=0 else ''}{market_status.get('spy_vs_ma50','—')}%", "SPY vs MA50", spy_color),
+        (c2, f"{'+' if market_status.get('qqq_vs_ma50',0)>=0 else ''}{market_status.get('qqq_vs_ma50','—')}%", "QQQ vs MA50", qqq_color),
+        (c3, vix_val if vix_val else "—", "VIX", vix_color),
+        (c4, spy_rsi if spy_rsi else "—", "RSI SPY", rsi_color),
+    ]:
+        col.markdown(f"""<div class="metric-card">
+            <div class="metric-value" style="color:{clr}">{val}</div>
+            <div class="metric-label">{label}</div>
+        </div>""", unsafe_allow_html=True)
+
+# ── BOUTON LANCER ──
+nb_total = len(SP500_TICKERS)
+label_scan = f"🔄 Lancer — S&P 500 complet ({nb_total} actions)" if use_prefilter else "🔄 Lancer l'analyse"
+st.markdown(f"<div style='color:#00ff88;margin:1rem 0;'>✅ <b>{nb_total}</b> actions dans l'univers S&P 500</div>",
             unsafe_allow_html=True)
 
-if st.button("🔄 Lancer l'analyse complète"):
+if st.button(label_scan):
 
-    with st.spinner("Collecte des données en cours..."):
-        tickers = SP500_TICKERS[:100] if mode_rapide else SP500_TICKERS
-        rows    = fetch_parallel(tickers, max_workers=nb_workers)
+    tickers_to_analyze = SP500_TICKERS
+
+    # ══ PASSE 1 : PRÉ-FILTRE ══
+    if use_prefilter:
+        st.markdown("### ⚡ Passe 1 — Pré-filtre rapide")
+        pf_progress = st.progress(0)
+        pf_status   = st.empty()
+
+        def pf_callback(done, total):
+            pf_progress.progress(done / total)
+            pf_status.markdown(f"⚡ Pré-filtre `{done}/{total}` actions...")
+
+        with st.spinner("Passe 1 — Filtrage rapide du S&P 500 complet..."):
+            pf_result = run_prefilter(
+                SP500_TICKERS,
+                max_workers=20,
+                progress_callback=pf_callback
+            )
+
+        pf_status.empty()
+        tickers_to_analyze = pf_result["passed"]
+
+        # Résumé pré-filtre
+        st.markdown(f"""
+        <div class="prefilter-banner">
+            ⚡ PASSE 1 TERMINÉE &nbsp;|&nbsp;
+            <span style="color:#00ff88">{pf_result['n_passed']} retenues</span>
+            &nbsp;/&nbsp; {pf_result['total']} analysées
+            &nbsp;|&nbsp; {pf_result['n_rejected']} éliminées
+            &nbsp;|&nbsp; Taux de passage : {pf_result['pass_rate']}%
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.expander(f"🗑️ Voir les {pf_result['n_rejected']} actions éliminées"):
+            rejected_data = [
+                {"Ticker": t, "Raison": pf_result['details'][t]}
+                for t in pf_result['rejected']
+            ]
+            st.dataframe(pd.DataFrame(rejected_data), use_container_width=True, height=200)
+
+    if not tickers_to_analyze:
+        st.error("❌ Aucune action ne passe le pré-filtre. Ajustez les critères dans la sidebar.")
+        st.stop()
+
+    # ══ PASSE 2 : ANALYSE COMPLÈTE ══
+    st.markdown(f"### 🔬 Passe 2 — Analyse complète ({len(tickers_to_analyze)} actions)")
+
+    with st.spinner("Analyse technique complète en cours..."):
+        rows = fetch_parallel(tickers_to_analyze, max_workers=nb_workers)
 
     if not rows:
         st.error("❌ Aucune donnée récupérée.")
@@ -488,13 +549,11 @@ if st.button("🔄 Lancer l'analyse complète"):
     df["AI Signal"]  = df["AI Score"].apply(ai_signal)
     df["AI Reasons"] = scores_data.apply(lambda x: " | ".join(x[1]))
 
-    # ── Appliquer filtre marché ──
     df = apply_market_filter(df, market_status)
     df.rename(columns={"AI Signal Ajusté": "AI Signal Ajuste"}, errors="ignore", inplace=True)
-
     df = df.sort_values("AI Score Ajusté", ascending=False).reset_index(drop=True)
 
-    # Filtres sidebar
+    # Filtres
     df_filtered = df[df["AI Score Ajusté"] >= min_score]
     if signal_filter:
         df_filtered = df_filtered[df_filtered["AI Signal Ajuste"].isin(signal_filter)]
@@ -524,7 +583,7 @@ if st.button("🔄 Lancer l'analyse complète"):
     for col, val, label in zip(
         [col1,col2,col3,col4,col5,col6,col7],
         [total,strong_buy,buy,hold,avoid,avec_pattern,bon_rr],
-        ["Total","Strong Buy","Buy","Hold","Avoid","Patterns","R/R ≥ 2"]
+        ["Analysées","Strong Buy","Buy","Hold","Avoid","Patterns","R/R ≥ 2"]
     ):
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value">{val}</div>
@@ -538,26 +597,23 @@ if st.button("🔄 Lancer l'analyse complète"):
     if not top5_rr.empty:
         for _, row in top5_rr.iterrows():
             rr    = row["RR_Ratio"]
-            color = "#00ff88" if rr >= 2.5 else "#4ade80" if rr >= 2.0 else "#fbbf24"
-            signal_ajuste = row.get("AI Signal Ajuste", row["AI Signal"])
+            clr   = "#00ff88" if rr >= 2.5 else "#4ade80" if rr >= 2.0 else "#fbbf24"
+            sig   = row.get("AI Signal Ajuste", row["AI Signal"])
             st.markdown(f"""
             <div class="trade-plan-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:{color}">{row['RR_Badge']}</strong>
+                <strong style="color:{clr}">{row['RR_Badge']}</strong>
                 &nbsp;|&nbsp; Score: <strong>{row['AI Score Ajusté']}/100</strong>
-                &nbsp;|&nbsp; Signal: <strong>{signal_ajuste}</strong>
-                &nbsp;|&nbsp; {row['RR_Quality']}
+                &nbsp;|&nbsp; {sig} &nbsp;|&nbsp; {row['RR_Quality']}
                 <br><br>
                 🎯 <strong>Entrée :</strong> ${row['Entree']}
-                &nbsp;&nbsp;
-                🛑 <strong>Stop :</strong> ${row['Stop']} <span style="color:#f87171">(-{row['Risque_Pct']}%)</span>
-                &nbsp;&nbsp;
-                🏆 <strong>Target :</strong> ${row['Target']} <span style="color:#00ff88">(+{row['Gain_Pct']}%)</span>
+                &nbsp;&nbsp;🛑 <strong>Stop :</strong> ${row['Stop']} <span style="color:#f87171">(-{row['Risque_Pct']}%)</span>
+                &nbsp;&nbsp;🏆 <strong>Target :</strong> ${row['Target']} <span style="color:#00ff88">(+{row['Gain_Pct']}%)</span>
                 <br>
                 📊 R/R: {rr}:1 &nbsp;|&nbsp; ATR: ${row['ATR']} ({row['ATR_Pct']}%)
                 &nbsp;|&nbsp; Support: ${row['Support']} &nbsp;|&nbsp; Résistance: ${row['Resistance']}
                 <br>
-                <span style="color:#94a3b8;font-size:0.8rem;">Pattern : {row['Top_Pattern']}</span>
+                <span style="color:#94a3b8;font-size:0.8rem;">Pattern : {row['Top_Pattern']} | Secteur : {row['Sector']}</span>
             </div>""", unsafe_allow_html=True)
 
     # PATTERNS
@@ -574,19 +630,19 @@ if st.button("🔄 Lancer l'analyse complète"):
                 &nbsp;|&nbsp; Score ajusté: <strong>{row['AI Score Ajusté']}/100</strong>
                 <br><span style="color:#94a3b8;font-size:0.8rem;">{row['Patterns']}</span>
             </div>""", unsafe_allow_html=True)
+    else:
+        st.info("Aucun pattern détecté.")
 
     # GRAPHIQUES
     st.markdown("---")
     st.markdown("### 📊 Visualisations")
-    tab1,tab2,tab3,tab4,tab5 = st.tabs([
-        "Distribution","RSI vs Score","Top 10","Patterns","R/R Ratio"
-    ])
     import plotly.express as px
+    tab1,tab2,tab3,tab4,tab5 = st.tabs(["Distribution","RSI vs Score","Top 10","Patterns","R/R Ratio"])
 
     with tab1:
         fig = px.histogram(df, x="AI Score Ajusté", nbins=20,
                            color_discrete_sequence=["#00ff88"],
-                           title=f"Distribution des scores ajustés — Marché {regime}")
+                           title=f"Distribution scores — Marché {regime} — {len(df)} actions analysées")
         fig.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                           font_color="#e2e8f0", title_font_color="#00ff88",
                           xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
@@ -605,8 +661,7 @@ if st.button("🔄 Lancer l'analyse complète"):
         st.plotly_chart(fig2, use_container_width=True)
 
     with tab3:
-        top10 = df.head(10)
-        fig3 = px.bar(top10, x="Ticker", y="AI Score Ajusté", color="AI Score Ajusté",
+        fig3 = px.bar(df.head(10), x="Ticker", y="AI Score Ajusté", color="AI Score Ajusté",
                       color_continuous_scale=["#1e3a5f","#00ff88"], title="Top 10 — Score ajusté")
         fig3.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                            font_color="#e2e8f0", title_font_color="#00ff88",
@@ -632,7 +687,7 @@ if st.button("🔄 Lancer l'analyse complète"):
                           hover_data=["Entree","Stop","Target","Risque_Pct","Gain_Pct"],
                           title="Top R/R Ratio")
             fig5.add_hline(y=2.0, line_dash="dash", line_color="#fbbf24",
-                           annotation_text="R/R minimum recommandé (2:1)")
+                           annotation_text="R/R minimum (2:1)")
             fig5.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                                font_color="#e2e8f0", title_font_color="#00ff88",
                                xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
@@ -646,7 +701,7 @@ if st.button("🔄 Lancer l'analyse complète"):
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge","RR_Quality",
         "RSI","MACD_Hist","Vol_Ratio",
         "Pattern_Badge","Top_Pattern","Pattern_Score",
-        "AI Score","AI Score Ajusté","AI Signal","AI Signal Ajuste","AI Reasons"
+        "AI Score","AI Score Ajusté","AI Signal Ajuste","AI Reasons"
     ]
     cols_display = [c for c in cols_display if c in df_filtered.columns]
     st.dataframe(df_filtered[cols_display], use_container_width=True, height=400)
@@ -655,20 +710,18 @@ if st.button("🔄 Lancer l'analyse complète"):
     if use_claude and api_key:
         st.markdown("---")
         st.markdown("### 🤖 Analyse Claude IA — Top 5")
-        st.markdown(f"<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Contexte marché intégré : {regime}</div>",
-                    unsafe_allow_html=True)
         top5 = df_filtered.head(5)
         for _, row in top5.iterrows():
             with st.spinner(f"Claude analyse {row['Ticker']}..."):
                 analysis = claude_analysis(row, api_key, market_status)
-            rr = row.get("RR_Ratio","N/A")
-            signal_ajuste = row.get("AI Signal Ajuste", row["AI Signal"])
+            rr  = row.get("RR_Ratio","N/A")
+            sig = row.get("AI Signal Ajuste", row["AI Signal"])
             st.markdown(f"""
             <div class="ai-analysis-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:#00ff88">{signal_ajuste}</strong>
+                <strong style="color:#00ff88">{sig}</strong>
                 — Score {row['AI Score Ajusté']}/100
-                &nbsp;|&nbsp; <span style="color:#4ade80">R/R {rr}:1</span>
+                &nbsp;|&nbsp; R/R {rr}:1
                 &nbsp;|&nbsp; <span style="color:#fbbf24">{row['Pattern_Badge']}</span>
                 <br><br>{analysis}
             </div>""", unsafe_allow_html=True)
@@ -678,7 +731,6 @@ if st.button("🔄 Lancer l'analyse complète"):
 
     # EXPORT
     st.markdown("---")
-    st.markdown("### 📥 Export")
     excel = to_excel(df_filtered[cols_display])
     st.download_button(
         "⬇️ Télécharger Excel",
