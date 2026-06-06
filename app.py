@@ -8,6 +8,7 @@ import time
 import concurrent.futures
 import anthropic
 from pattern_detection import detect_all_patterns, pattern_badge
+from risk_manager import calc_risk_reward, risk_badge, format_trade_plan
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -29,17 +30,14 @@ st.markdown("""
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif;
 }
-
 .stApp {
     background: #0a0e1a;
     color: #e2e8f0;
 }
-
 h1, h2, h3 {
     font-family: 'Space Mono', monospace;
     color: #00ff88 !important;
 }
-
 .metric-card {
     background: linear-gradient(135deg, #111827 0%, #1a2332 100%);
     border: 1px solid #1e3a5f;
@@ -48,14 +46,12 @@ h1, h2, h3 {
     text-align: center;
     margin: 4px;
 }
-
 .metric-value {
     font-family: 'Space Mono', monospace;
     font-size: 2rem;
     font-weight: 700;
     color: #00ff88;
 }
-
 .metric-label {
     font-size: 0.8rem;
     color: #64748b;
@@ -63,12 +59,6 @@ h1, h2, h3 {
     letter-spacing: 0.1em;
     margin-top: 4px;
 }
-
-.signal-strong-buy { color: #00ff88; font-weight: 700; font-family: 'Space Mono', monospace; }
-.signal-buy        { color: #4ade80; font-weight: 600; }
-.signal-hold       { color: #fbbf24; font-weight: 600; }
-.signal-avoid      { color: #f87171; font-weight: 600; }
-
 .stButton > button {
     background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
     color: #0a0e1a !important;
@@ -78,14 +68,7 @@ h1, h2, h3 {
     border-radius: 8px !important;
     padding: 12px 24px !important;
     letter-spacing: 0.05em;
-    transition: all 0.2s;
 }
-
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,255,136,0.3) !important;
-}
-
 .ai-analysis-box {
     background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
     border: 1px solid #00ff8844;
@@ -96,7 +79,6 @@ h1, h2, h3 {
     font-size: 0.9rem;
     line-height: 1.6;
 }
-
 .pattern-box {
     background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
     border: 1px solid #fbbf2444;
@@ -107,7 +89,20 @@ h1, h2, h3 {
     font-size: 0.85rem;
     line-height: 1.6;
 }
-
+.trade-plan-box {
+    background: linear-gradient(135deg, #0f2a1f 0%, #0a1a14 100%);
+    border: 1px solid #00ff8833;
+    border-left: 4px solid #00ff88;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 8px 0;
+    font-size: 0.88rem;
+    line-height: 1.8;
+}
+.rr-excellent { color: #00ff88; font-weight: 700; }
+.rr-bon       { color: #4ade80; font-weight: 600; }
+.rr-acceptable{ color: #fbbf24; font-weight: 600; }
+.rr-faible    { color: #f87171; font-weight: 600; }
 .ticker-badge {
     display: inline-block;
     background: #00ff8822;
@@ -119,17 +114,14 @@ h1, h2, h3 {
     border-radius: 4px;
     margin-right: 8px;
 }
-
 div[data-testid="stDataFrame"] {
     border: 1px solid #1e3a5f;
     border-radius: 10px;
     overflow: hidden;
 }
-
 .stProgress > div > div {
     background: linear-gradient(90deg, #00ff88, #00cc6a) !important;
 }
-
 section[data-testid="stSidebar"] {
     background: #0d1117 !important;
     border-right: 1px solid #1e3a5f;
@@ -138,7 +130,7 @@ section[data-testid="stSidebar"] {
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────
-# 📌 S&P 500 LISTE STATIQUE
+# 📌 S&P 500 TICKERS
 # ─────────────────────────────
 SP500_TICKERS = [
     "MMM","AOS","ABT","ABBV","ACN","ADBE","AMD","AES","AFL","A","APD","ABNB","AKAM","ALB","ARE",
@@ -213,11 +205,11 @@ def calc_volume_signal(volume, close):
     return vol_ratio, price_up
 
 # ─────────────────────────────
-# 📈 FETCH (PARALLÉLISÉ)
+# 📈 FETCH
 # ─────────────────────────────
 def fetch(ticker):
     try:
-        t = yf.Ticker(ticker)
+        t    = yf.Ticker(ticker)
         hist = t.history(period="1y")
 
         if hist is None or hist.empty or len(hist) < 50:
@@ -235,11 +227,14 @@ def fetch(ticker):
         bb_bandwidth, bb_pct = calc_bollinger(close)
         vol_ratio, price_up  = calc_volume_signal(volume, close)
 
-        # ── Détection patterns swing ──
+        # ── Patterns ──
         patterns_data = detect_all_patterns(hist)
 
-        # Données fondamentales
-        info = t.info
+        # ── Risque / Rendement ──
+        rr_data = calc_risk_reward(hist)
+
+        # Fondamentaux
+        info       = t.info
         pe_ratio   = info.get("trailingPE", None)
         revenue_gr = info.get("revenueGrowth", None)
         net_margin = info.get("profitMargins", None)
@@ -262,10 +257,27 @@ def fetch(ticker):
             "PE":            round(pe_ratio, 1) if pe_ratio else None,
             "Rev_Growth":    round(revenue_gr * 100, 1) if revenue_gr else None,
             "Net_Margin":    round(net_margin * 100, 1) if net_margin else None,
+            # Patterns
             "Top_Pattern":   patterns_data["top_pattern"],
             "Patterns":      patterns_data["summary"],
             "Pattern_Score": patterns_data["bonus_score"],
             "Pattern_Badge": pattern_badge(patterns_data["bonus_score"]),
+            # Risque / Rendement
+            "Entree":        rr_data["entry"],
+            "Stop":          rr_data["stop"],
+            "Target":        rr_data["target"],
+            "RR_Ratio":      rr_data["rr_ratio"],
+            "Risque_Pct":    rr_data["risk_pct"],
+            "Gain_Pct":      rr_data["reward_pct"],
+            "ATR":           rr_data["atr"],
+            "ATR_Pct":       rr_data["atr_pct"],
+            "Support":       rr_data["support"],
+            "Resistance":    rr_data["resistance"],
+            "RR_Quality":    rr_data["quality"],
+            "RR_Confidence": rr_data["confidence"],
+            "RR_Badge":      risk_badge(rr_data["rr_ratio"], rr_data["risk_pct"]),
+            # Stocker rr_data complet pour l'affichage
+            "_rr_data":      rr_data,
         }
     except Exception:
         return None
@@ -306,7 +318,7 @@ def ai_score(row):
     rev_growth = row["Rev_Growth"]
     net_margin = row["Net_Margin"]
 
-    # — Trend (30 pts) —
+    # Trend (30 pts)
     if price > ma50 > ma200:
         score += 30
         reasons.append("Trend haussière forte")
@@ -317,7 +329,7 @@ def ai_score(row):
         score += 3
         reasons.append("Trend faible")
 
-    # — RSI (20 pts) —
+    # RSI (20 pts)
     if 40 <= rsi_val <= 60:
         score += 20
         reasons.append("RSI idéal")
@@ -333,7 +345,7 @@ def ai_score(row):
     else:
         score += 8
 
-    # — MACD (15 pts) —
+    # MACD (15 pts)
     if macd_hist > 0:
         score += 15
         reasons.append("MACD haussier")
@@ -341,7 +353,7 @@ def ai_score(row):
         score += 3
         reasons.append("MACD baissier")
 
-    # — Volume (10 pts) —
+    # Volume (10 pts)
     if vol_ratio > 1.5 and price_up:
         score += 10
         reasons.append("Volume fort haussier")
@@ -354,7 +366,7 @@ def ai_score(row):
     else:
         score += 5
 
-    # — Bollinger (10 pts) —
+    # Bollinger (10 pts)
     if 0.2 <= bb_pct <= 0.8:
         score += 10
         reasons.append("Position Bollinger saine")
@@ -364,7 +376,7 @@ def ai_score(row):
     else:
         score += 3
 
-    # — Fondamentaux (15 pts) —
+    # Fondamentaux (15 pts)
     fund_pts = 0
     if pe and 5 < pe < 30:
         fund_pts += 5
@@ -377,13 +389,22 @@ def ai_score(row):
         reasons.append(f"Marge nette solide ({net_margin}%)")
     score += fund_pts
 
-    # — Bonus Patterns (max +40 pts) —
+    # Bonus Patterns
     pattern_bonus = row.get("Pattern_Score", 0)
     if pattern_bonus > 0:
         score += pattern_bonus
         top = row.get("Top_Pattern", "")
         if top and top != "—":
             reasons.append(f"Pattern: {top}")
+
+    # Bonus R/R
+    rr = row.get("RR_Ratio", None)
+    if rr and rr >= 2.5:
+        score += 5
+        reasons.append(f"R/R excellent ({rr}:1)")
+    elif rr and rr >= 2.0:
+        score += 3
+        reasons.append(f"R/R bon ({rr}:1)")
 
     return min(score, 100), reasons
 
@@ -407,28 +428,29 @@ def claude_analysis(row, api_key):
         pe_str = f"{row['PE']}x"         if row['PE']         else "N/A"
         rg_str = f"{row['Rev_Growth']}%" if row['Rev_Growth'] else "N/A"
         nm_str = f"{row['Net_Margin']}%" if row['Net_Margin'] else "N/A"
+        rr_str = f"{row['RR_Ratio']}:1"  if row['RR_Ratio']  else "N/A"
 
-        prompt = f"""Tu es un analyste financier senior spécialisé en swing trading (5-7 jours).
-Analyse ce titre et donne un avis concis (6-8 lignes max) en français.
+        prompt = f"""Tu es un trader spécialisé en swing trading (lundi achat → vendredi vente).
+Analyse ce titre et donne un avis concis en français (6-8 lignes max).
 
 Ticker: {row['Ticker']} | Secteur: {row['Sector']}
-Prix: ${row['Prix']} | MA50: ${row['MA50']} | MA200: ${row['MA200']}
-RSI: {row['RSI']} | MACD Hist: {row['MACD_Hist']} | BB%: {row['BB_Pct']}
+Prix: ${row['Prix']} | Entrée: ${row['Entree']} | Stop: ${row['Stop']} | Target: ${row['Target']}
+Ratio R/R: {rr_str} | Risque: {row['Risque_Pct']}% | Gain potentiel: {row['Gain_Pct']}%
+RSI: {row['RSI']} | MACD Hist: {row['MACD_Hist']} | ATR: {row['ATR_Pct']}%
 Volume ratio: {row['Vol_Ratio']}x | PE: {pe_str}
-Croissance revenus: {rg_str} | Marge nette: {nm_str}
 Score IA: {row['AI Score']}/100 | Signal: {row['AI Signal']}
-Pattern détecté: {row['Top_Pattern']} | Score pattern: {row['Pattern_Score']}/40
+Pattern: {row['Top_Pattern']} | Qualité setup: {row['RR_Quality']}
 
 Donne:
-1) Verdict ACHETER / ATTENDRE / ÉVITER
-2) Argument principal pour le swing
-3) Point d'entrée et stop-loss suggérés
-4) Risque principal cette semaine
+1) VERDICT (ACHETER / ATTENDRE / ÉVITER)
+2) Confirmes-tu l'entrée à ${row['Entree']} et le stop à ${row['Stop']} ?
+3) Argument principal pour ce swing cette semaine
+4) Risque principal à surveiller
 Sois direct, chiffré, sans disclaimer."""
 
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=350,
+            max_tokens=400,
             messages=[{"role": "user", "content": prompt}]
         )
         return message.content[0].text
@@ -456,19 +478,22 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🤖 Analyse Claude IA")
-    api_key = st.text_input("Clé API Anthropic", type="password",
-                             help="Obtenez votre clé sur console.anthropic.com")
+    api_key    = st.text_input("Clé API Anthropic", type="password",
+                                help="Obtenez votre clé sur console.anthropic.com")
     use_claude = st.checkbox("Activer l'analyse Claude", value=False)
 
     st.markdown("---")
     st.markdown("### 🔍 Filtres")
-    min_score = st.slider("Score IA minimum", 0, 100, 50)
+    min_score     = st.slider("Score IA minimum", 0, 100, 50)
+    min_rr        = st.slider("R/R minimum", 0.0, 3.0, 1.5, step=0.1)
+    max_risk      = st.slider("Risque max (%)", 1.0, 10.0, 5.0, step=0.5)
     signal_filter = st.multiselect(
         "Signaux à afficher",
         ["🟢 STRONG BUY", "🟢 BUY", "🟡 HOLD", "🔴 AVOID"],
         default=["🟢 STRONG BUY", "🟢 BUY"]
     )
     only_patterns = st.checkbox("🔍 Avec patterns seulement", value=False)
+    only_good_rr  = st.checkbox("📐 R/R ≥ 2.0 seulement", value=False)
 
     st.markdown("---")
     st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro<br>Données via Yahoo Finance</div>",
@@ -478,7 +503,7 @@ with st.sidebar:
 # 🚀 MAIN
 # ─────────────────────────────
 st.markdown("# 📊 S&P 500 IA Screener Pro")
-st.markdown("<div style='color:#64748b;margin-bottom:2rem;'>Analyse technique · Patterns swing · Propulsé par Claude IA</div>",
+st.markdown("<div style='color:#64748b;margin-bottom:2rem;'>Analyse technique · Patterns · Risque/Rendement · Propulsé par Claude IA</div>",
             unsafe_allow_html=True)
 
 tickers = SP500_TICKERS[:100] if mode_rapide else SP500_TICKERS
@@ -497,7 +522,7 @@ if st.button("🔄 Lancer l'analyse complète"):
     df = pd.DataFrame(rows)
 
     # Calcul scores
-    scores_data = df.apply(ai_score, axis=1)
+    scores_data  = df.apply(ai_score, axis=1)
     df["AI Score"]   = scores_data.apply(lambda x: x[0])
     df["AI Signal"]  = df["AI Score"].apply(ai_signal)
     df["AI Reasons"] = scores_data.apply(lambda x: " | ".join(x[1]))
@@ -509,23 +534,32 @@ if st.button("🔄 Lancer l'analyse complète"):
         df_filtered = df_filtered[df_filtered["AI Signal"].isin(signal_filter)]
     if only_patterns:
         df_filtered = df_filtered[df_filtered["Pattern_Score"] > 0]
+    if only_good_rr:
+        df_filtered = df_filtered[df_filtered["RR_Ratio"] >= 2.0]
+    df_filtered = df_filtered[
+        (df_filtered["RR_Ratio"].isna()) | (df_filtered["RR_Ratio"] >= min_rr)
+    ]
+    df_filtered = df_filtered[
+        (df_filtered["Risque_Pct"].isna()) | (df_filtered["Risque_Pct"] <= max_risk)
+    ]
 
     # ── MÉTRIQUES ──
     st.markdown("---")
     st.markdown("### 📈 Vue d'ensemble")
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    total        = len(df)
-    strong_buy   = len(df[df["AI Signal"] == "🟢 STRONG BUY"])
-    buy          = len(df[df["AI Signal"] == "🟢 BUY"])
-    hold         = len(df[df["AI Signal"] == "🟡 HOLD"])
-    avoid        = len(df[df["AI Signal"] == "🔴 AVOID"])
-    avec_pattern = len(df[df["Pattern_Score"] > 0])
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    total         = len(df)
+    strong_buy    = len(df[df["AI Signal"] == "🟢 STRONG BUY"])
+    buy           = len(df[df["AI Signal"] == "🟢 BUY"])
+    hold          = len(df[df["AI Signal"] == "🟡 HOLD"])
+    avoid         = len(df[df["AI Signal"] == "🔴 AVOID"])
+    avec_pattern  = len(df[df["Pattern_Score"] > 0])
+    bon_rr        = len(df[df["RR_Ratio"] >= 2.0]) if "RR_Ratio" in df.columns else 0
 
     for col, val, label in zip(
-        [col1, col2, col3, col4, col5, col6],
-        [total, strong_buy, buy, hold, avoid, avec_pattern],
-        ["Total", "Strong Buy", "Buy", "Hold", "Avoid", "Avec Pattern"]
+        [col1, col2, col3, col4, col5, col6, col7],
+        [total, strong_buy, buy, hold, avoid, avec_pattern, bon_rr],
+        ["Total", "Strong Buy", "Buy", "Hold", "Avoid", "Patterns", "R/R ≥ 2"]
     ):
         col.markdown(f"""
         <div class="metric-card">
@@ -533,29 +567,66 @@ if st.button("🔄 Lancer l'analyse complète"):
             <div class="metric-label">{label}</div>
         </div>""", unsafe_allow_html=True)
 
-    # ── PATTERNS DÉTECTÉS ──
+    # ── PLANS DE TRADE TOP 5 ──
     st.markdown("---")
-    st.markdown("### 🔍 Top Patterns Swing Détectés")
+    st.markdown("### 📐 Plans de Trade — Top 5 Opportunités")
+    st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Entrée · Stop-Loss · Target · R/R — calculés par ATR</div>",
+                unsafe_allow_html=True)
 
-    top_patterns = df[df["Pattern_Score"] > 0].sort_values("Pattern_Score", ascending=False).head(10)
+    top5_rr = df_filtered[df_filtered["RR_Ratio"].notna()].head(5)
+    if not top5_rr.empty:
+        for _, row in top5_rr.iterrows():
+            rr    = row["RR_Ratio"]
+            color = "#00ff88" if rr >= 2.5 else "#4ade80" if rr >= 2.0 else "#fbbf24"
+            st.markdown(f"""
+            <div class="trade-plan-box">
+                <span class="ticker-badge">{row['Ticker']}</span>
+                <strong style="color:{color}">{row['RR_Badge']}</strong>
+                &nbsp;|&nbsp; Score: <strong>{row['AI Score']}/100</strong>
+                &nbsp;|&nbsp; {row['RR_Quality']}
+                <br><br>
+                🎯 <strong>Entrée :</strong> ${row['Entree']}
+                &nbsp;&nbsp;
+                🛑 <strong>Stop :</strong> ${row['Stop']} <span style="color:#f87171">(-{row['Risque_Pct']}%)</span>
+                &nbsp;&nbsp;
+                🏆 <strong>Target :</strong> ${row['Target']} <span style="color:#00ff88">(+{row['Gain_Pct']}%)</span>
+                <br>
+                📊 <strong>R/R :</strong> {rr}:1
+                &nbsp;|&nbsp; ATR : ${row['ATR']} ({row['ATR_Pct']}%)
+                &nbsp;|&nbsp; Support : ${row['Support']}
+                &nbsp;|&nbsp; Résistance : ${row['Resistance']}
+                <br>
+                <span style="color:#94a3b8;font-size:0.8rem;">Pattern : {row['Top_Pattern']}</span>
+            </div>""", unsafe_allow_html=True)
+    else:
+        st.info("Aucun plan R/R disponible avec les filtres actuels.")
+
+    # ── PATTERNS ──
+    st.markdown("---")
+    st.markdown("### 🔍 Patterns Swing Détectés")
+
+    top_patterns = df[df["Pattern_Score"] > 0].sort_values("Pattern_Score", ascending=False).head(8)
     if not top_patterns.empty:
         for _, row in top_patterns.iterrows():
             st.markdown(f"""
             <div class="pattern-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
                 <strong style="color:#fbbf24">{row['Pattern_Badge']}</strong>
-                &nbsp;|&nbsp; Score pattern: <strong>+{row['Pattern_Score']} pts</strong>
-                &nbsp;|&nbsp; Score total: <strong>{row['AI Score']}/100</strong><br>
+                &nbsp;|&nbsp; +{row['Pattern_Score']} pts
+                &nbsp;|&nbsp; Score total : <strong>{row['AI Score']}/100</strong>
+                <br>
                 <span style="color:#94a3b8;font-size:0.8rem;">{row['Patterns']}</span>
             </div>""", unsafe_allow_html=True)
     else:
-        st.info("Aucun pattern détecté sur les actions filtrées.")
+        st.info("Aucun pattern détecté.")
 
     # ── GRAPHIQUES ──
     st.markdown("---")
     st.markdown("### 📊 Visualisations")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Distribution scores", "RSI vs Score", "Top 10", "Patterns"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Distribution scores", "RSI vs Score", "Top 10", "Patterns", "R/R Ratio"
+    ])
 
     with tab1:
         import plotly.express as px
@@ -569,7 +640,7 @@ if st.button("🔄 Lancer l'analyse complète"):
 
     with tab2:
         fig2 = px.scatter(df, x="RSI", y="AI Score", color="AI Signal",
-                          hover_data=["Ticker", "Sector", "Top_Pattern"],
+                          hover_data=["Ticker", "Sector", "Top_Pattern", "RR_Ratio"],
                           color_discrete_map={
                               "🟢 STRONG BUY": "#00ff88", "🟢 BUY": "#4ade80",
                               "🟡 HOLD": "#fbbf24", "🔴 AVOID": "#f87171"
@@ -600,16 +671,30 @@ if st.button("🔄 Lancer l'analyse complète"):
                                font_color="#e2e8f0", title_font_color="#00ff88",
                                xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
             st.plotly_chart(fig4, use_container_width=True)
-        else:
-            st.info("Aucun pattern à afficher.")
+
+    with tab5:
+        df_rr = df[df["RR_Ratio"].notna()].sort_values("RR_Ratio", ascending=False).head(15)
+        if not df_rr.empty:
+            fig5 = px.bar(df_rr, x="Ticker", y="RR_Ratio", color="RR_Ratio",
+                          color_continuous_scale=["#f87171", "#fbbf24", "#00ff88"],
+                          hover_data=["Entree", "Stop", "Target", "Risque_Pct", "Gain_Pct"],
+                          title="Top R/R Ratio")
+            fig5.add_hline(y=2.0, line_dash="dash", line_color="#fbbf24",
+                           annotation_text="R/R min recommandé (2:1)")
+            fig5.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                               font_color="#e2e8f0", title_font_color="#00ff88",
+                               xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
+            st.plotly_chart(fig5, use_container_width=True)
 
     # ── TABLEAU ──
     st.markdown("---")
     st.markdown(f"### 🏆 Résultats ({len(df_filtered)} actions)")
 
     cols_display = [
-        "Ticker", "Sector", "Prix", "MA50", "MA200", "RSI", "MACD_Hist",
-        "Vol_Ratio", "PE", "Rev_Growth", "Net_Margin",
+        "Ticker", "Sector", "Prix",
+        "Entree", "Stop", "Target", "RR_Ratio", "Risque_Pct", "Gain_Pct",
+        "RR_Badge", "RR_Quality",
+        "RSI", "MACD_Hist", "Vol_Ratio",
         "Pattern_Badge", "Top_Pattern", "Pattern_Score",
         "AI Score", "AI Signal", "AI Reasons"
     ]
@@ -620,18 +705,20 @@ if st.button("🔄 Lancer l'analyse complète"):
     if use_claude and api_key:
         st.markdown("---")
         st.markdown("### 🤖 Analyse Claude IA — Top 5")
-        st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Analyse swing trading par Claude pour les 5 meilleures opportunités</div>",
+        st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Analyse swing + validation plan de trade par Claude</div>",
                     unsafe_allow_html=True)
 
         top5 = df_filtered.head(5)
         for _, row in top5.iterrows():
             with st.spinner(f"Claude analyse {row['Ticker']}..."):
                 analysis = claude_analysis(row, api_key)
+            rr = row.get("RR_Ratio", "N/A")
             st.markdown(f"""
             <div class="ai-analysis-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
                 <strong style="color:#00ff88">{row['AI Signal']}</strong>
                 — Score {row['AI Score']}/100
+                &nbsp;|&nbsp; <span style="color:#4ade80">R/R {rr}:1</span>
                 &nbsp;|&nbsp; <span style="color:#fbbf24">{row['Pattern_Badge']}</span>
                 <br><br>{analysis}
             </div>""", unsafe_allow_html=True)
@@ -643,7 +730,8 @@ if st.button("🔄 Lancer l'analyse complète"):
     # ── EXPORT ──
     st.markdown("---")
     st.markdown("### 📥 Export")
-    excel = to_excel(df_filtered[cols_display])
+    excel_cols = [c for c in cols_display if c in df_filtered.columns]
+    excel = to_excel(df_filtered[excel_cols])
     st.download_button(
         "⬇️ Télécharger Excel",
         data=excel,
