@@ -602,8 +602,25 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
         if df_bt.empty:
             st.error("❌ Aucun trade simulé.")
         else:
+            # Debug — vérifier les colonnes disponibles
+            pnl_cols = [c for c in df_bt.columns if c.startswith("pnl_")]
+            if not pnl_cols:
+                st.error("❌ Colonnes de stratégies manquantes. Vérifie que backtest.py est bien la nouvelle version.")
+                st.write("Colonnes disponibles:", list(df_bt.columns))
+                st.stop()
+
             stats = backtest_summary(df_bt)
             total_trades = len(df_bt)
+
+            # Filtrer — garder seulement les clés A-F
+            valid_keys = [k for k in stats.keys() if k in ["A","B","C","D","E","F"]]
+            if not valid_keys:
+                st.error("❌ Résultats par stratégie non trouvés.")
+                st.write("Clés dans stats:", list(stats.keys()))
+                st.write("Colonnes df:", pnl_cols)
+                st.stop()
+
+            stats = {k: stats[k] for k in valid_keys}
             st.markdown(f"### 📈 Comparatif 6 Stratégies — {total_trades} trades simulés")
 
             strat_labels = {
