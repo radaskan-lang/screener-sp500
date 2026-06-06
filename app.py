@@ -1,19 +1,31 @@
-import streamlit as st
 import yfinance as yf
-import pandas as pd
-from datetime import datetime
-from io import BytesIO
-import time
-import requests
 
-# ─────────────────────────────
-# 📌 S&P 500 (SOURCE STABLE)
-# ─────────────────────────────
-@st.cache_data(ttl=86400)
-def get_sp500():
-    url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
-    df = pd.read_csv(url)
-    return [t.replace(".", "-") for t in df["Symbol"].tolist()]
+import pandas as pd
+
+import openpyxl
+
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+from openpyxl.utils import get_column_letter
+
+from datetime import datetime
+
+import time
+
+# ── LISTE DES TICKERS ─────────────────────────────────────────────────────────
+
+TICKERS = [
+
+    "AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA","BRK-B","UNH","LLY",
+
+    "JPM","V","XOM","JNJ","PG","MA","HD","MRK","AVGO","CVX","ABBV","KO",
+
+    "PEP","COST","MCD","TMO","ADBE","CRM","NFLX","AMD","WMT","ACN","LIN",
+
+    "ABT","DHR","TXN","VZ","NEE","PM","ORCL","RTX","HON","UPS","IBM","SPGI",
+
+    "GE","CAT","T","INTU","AMAT",
+
 
 # ─────────────────────────────
 # 📊 RSI
