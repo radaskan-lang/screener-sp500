@@ -14,6 +14,7 @@ from pre_filter import run_prefilter, PREFILTER_CONFIG
 from advanced_indicators import detect_advanced_signals
 from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
 from volume_signals import detect_volume_anomaly
+from backtest import run_backtest, backtest_summary
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
