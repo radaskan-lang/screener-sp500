@@ -590,10 +590,12 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 fig_pnl = px.histogram(df_bt, x="pnl_pct", nbins=40, color="result",
                     color_discrete_map={"WIN":"#00ff88","LOSS":"#f87171","BREAKEVEN":"#fbbf24"},
                     title="Distribution des PnL")
-                fig_pnl.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                    font_color="#e2e8f0", title_font_color="#00ff88",
-                    xaxis=dict(gridcolor="#1e3a5f", zeroline=True, zerolinecolor="#ffffff44"),
-                    yaxis=dict(gridcolor="#1e3a5f"))
+                fig_pnl.update_layout(
+                    paper_bgcolor="#0a0e1a",
+                    plot_bgcolor="#111827",
+                    font_color="#e2e8f0",
+                    title_font_color="#00ff88"
+                )
                 st.plotly_chart(fig_pnl, use_container_width=True)
 
             with bt_tab2:
@@ -604,13 +606,18 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                     lambda x: round(len(x[x["result"]=="WIN"])/len(x)*100, 1)
                 ).reset_index()
                 wr_by_score.columns = ["Score","Win Rate %"]
-                fig_wr = px.bar(wr_by_score, x="Score", y="Win Rate %",
-                    color="Win Rate %", color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
-                    title="Win Rate % par score — ligne 50% = seuil breakeven")
-                fig_wr.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                    font_color="#e2e8f0", title_font_color="#00ff88",
-                    xaxis=dict(gridcolor="#1e3a5f"),
-                    yaxis=dict(gridcolor="#1e3a5f", range=[0,100]))
+                fig_wr = px.bar(
+                    wr_by_score, x="Score", y="Win Rate %",
+                    color="Win Rate %",
+                    color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
+                    title="Win Rate % par score (seuil rentable = 50%)"
+                )
+                fig_wr.update_layout(
+                    paper_bgcolor="#0a0e1a",
+                    plot_bgcolor="#111827",
+                    font_color="#e2e8f0",
+                    title_font_color="#00ff88"
+                )
                 st.plotly_chart(fig_wr, use_container_width=True)
 
             with bt_tab3:
@@ -619,16 +626,21 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 df_sorted["index"] = range(len(df_sorted))
                 fig_cap = go.Figure()
                 fig_cap.add_trace(go.Scatter(
-                    x=df_sorted["index"], y=df_sorted["cumul"],
-                    mode="lines", name="PnL cumulé %",
+                    x=df_sorted["index"],
+                    y=df_sorted["cumul"],
+                    mode="lines",
+                    name="PnL cumulé %",
                     line=dict(color="#00ff88", width=2),
-                    fill="tozeroy", fillcolor="#00ff8815"
+                    fill="tozeroy",
+                    fillcolor="#00ff8815"
                 ))
-                fig_cap.update_layout(title="Courbe de capital cumulée",
-                    paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                    font_color="#e2e8f0", title_font_color="#00ff88",
-                    xaxis=dict(gridcolor="#1e3a5f", title="Trade #"),
-                    yaxis=dict(gridcolor="#1e3a5f", title="PnL cumulé %"))
+                fig_cap.update_layout(
+                    title="Courbe de capital — PnL cumulé %",
+                    paper_bgcolor="#0a0e1a",
+                    plot_bgcolor="#111827",
+                    font_color="#e2e8f0",
+                    title_font_color="#00ff88"
+                )
                 st.plotly_chart(fig_cap, use_container_width=True)
 
             # Export
