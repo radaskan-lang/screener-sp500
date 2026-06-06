@@ -12,6 +12,7 @@ from risk_manager import calc_risk_reward, risk_badge
 from market_filter import get_market_status, apply_market_filter, market_advice
 from pre_filter import run_prefilter, PREFILTER_CONFIG
 from advanced_indicators import detect_advanced_signals
+from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -48,34 +49,43 @@ h1, h2, h3 { font-family: 'Space Mono', monospace; color: #00ff88 !important; }
     border-radius: 8px; padding: 12px 18px; margin: 10px 0;
     font-size: 0.85rem; font-family: 'Space Mono', monospace;
 }
+.trade-card {
+    background: linear-gradient(135deg, #0a1628 0%, #0f2040 100%);
+    border: 1px solid #1e4060; border-radius: 14px;
+    padding: 20px 24px; margin: 10px 0;
+    position: relative; overflow: hidden;
+}
+.trade-card-gold {
+    background: linear-gradient(135deg, #1a1400 0%, #2a2000 100%);
+    border: 2px solid #ffd70066; border-radius: 14px;
+    padding: 20px 24px; margin: 10px 0;
+    box-shadow: 0 0 20px #ffd70022;
+}
+.trade-card-green {
+    background: linear-gradient(135deg, #001a0f 0%, #002a18 100%);
+    border: 1px solid #00ff8844; border-radius: 14px;
+    padding: 20px 24px; margin: 10px 0;
+}
+.signal-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.signal-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px;
+    font-family: 'Space Mono', monospace;
+}
+.conv-bar { font-family: 'Space Mono', monospace; font-size: 18px; letter-spacing: 2px; }
 .ai-analysis-box {
     background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
     border: 1px solid #00ff8844; border-left: 4px solid #00ff88;
     border-radius: 8px; padding: 16px 20px; margin: 8px 0; font-size: 0.9rem; line-height: 1.6;
 }
-.pattern-box {
-    background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
-    border: 1px solid #fbbf2444; border-left: 4px solid #fbbf24;
-    border-radius: 8px; padding: 12px 16px; margin: 6px 0; font-size: 0.85rem;
-}
-.trade-plan-box {
-    background: linear-gradient(135deg, #0f2a1f 0%, #0a1a14 100%);
-    border: 1px solid #00ff8833; border-left: 4px solid #00ff88;
-    border-radius: 8px; padding: 16px 20px; margin: 8px 0; font-size: 0.88rem; line-height: 1.8;
-}
-.advanced-box {
-    background: linear-gradient(135deg, #1a0f35 0%, #100a28 100%);
-    border: 1px solid #a78bfa44; border-left: 4px solid #a78bfa;
-    border-radius: 8px; padding: 14px 18px; margin: 6px 0; font-size: 0.85rem; line-height: 1.7;
-}
-.advice-box {
-    background: #0d1117; border: 1px solid #1e3a5f;
-    border-radius: 8px; padding: 12px 16px; margin: 6px 0; font-size: 0.85rem;
-}
+.advice-box { background: #0d1117; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px 16px; margin: 6px 0; font-size: 0.85rem; }
 .ticker-badge {
     display: inline-block; background: #00ff8822; border: 1px solid #00ff8866;
-    color: #00ff88; font-family: 'Space Mono', monospace; font-size: 0.85rem;
-    padding: 2px 10px; border-radius: 4px; margin-right: 8px;
+    color: #00ff88; font-family: 'Space Mono', monospace; font-size: 0.9rem;
+    padding: 3px 12px; border-radius: 4px; margin-right: 8px; font-weight: 700;
+}
+.rank-badge {
+    display: inline-block; font-family: 'Space Mono', monospace;
+    font-size: 1.4rem; font-weight: 700; color: #64748b; margin-right: 8px;
 }
 div[data-testid="stDataFrame"] { border: 1px solid #1e3a5f; border-radius: 10px; overflow: hidden; }
 .stProgress > div > div { background: linear-gradient(90deg, #00ff88, #00cc6a) !important; }
@@ -146,19 +156,17 @@ def calc_bollinger(series, period=20):
     upper = ma + 2 * std
     lower = ma - 2 * std
     price = series.iloc[-1]
-    bandwidth = float((upper.iloc[-1] - lower.iloc[-1]) / ma.iloc[-1] * 100)
-    pct_b     = float((price - lower.iloc[-1]) / (upper.iloc[-1] - lower.iloc[-1]))
-    return bandwidth, pct_b
+    pct_b = float((price - lower.iloc[-1]) / (upper.iloc[-1] - lower.iloc[-1]))
+    return pct_b
 
 def calc_volume_signal(volume, close):
     avg_vol   = volume.rolling(20).mean().iloc[-1]
     last_vol  = volume.iloc[-1]
-    price_up  = close.iloc[-1] > close.iloc[-2]
     vol_ratio = float(last_vol / avg_vol) if avg_vol > 0 else 1.0
-    return vol_ratio, price_up
+    return vol_ratio
 
 # ─────────────────────────────
-# 📈 FETCH COMPLET
+# 📈 FETCH
 # ─────────────────────────────
 def fetch(ticker):
     try:
@@ -170,22 +178,20 @@ def fetch(ticker):
         close  = hist["Close"]
         volume = hist["Volume"]
 
-        price = float(close.iloc[-1])
-        ma50  = float(close.rolling(50).mean().iloc[-1])
-        ma200 = float(close.rolling(200).mean().iloc[-1])
-        rsi   = calc_rsi(close)
+        price     = float(close.iloc[-1])
+        ma50      = float(close.rolling(50).mean().iloc[-1])
+        ma200     = float(close.rolling(200).mean().iloc[-1])
+        rsi       = calc_rsi(close)
         macd_line, macd_signal, macd_hist = calc_macd(close)
-        bb_bandwidth, bb_pct = calc_bollinger(close)
-        vol_ratio, price_up  = calc_volume_signal(volume, close)
+        bb_pct    = calc_bollinger(close)
+        vol_ratio = calc_volume_signal(volume, close)
 
         patterns_data = detect_all_patterns(hist)
         rr_data       = calc_risk_reward(hist)
         adv           = detect_advanced_signals(hist)
 
         info       = t.info
-        pe_ratio   = info.get("trailingPE", None)
         revenue_gr = info.get("revenueGrowth", None)
-        net_margin = info.get("profitMargins", None)
         sector     = info.get("sector", "N/A")
 
         return {
@@ -195,20 +201,16 @@ def fetch(ticker):
             "MA50":          round(ma50, 2),
             "MA200":         round(ma200, 2),
             "RSI":           round(rsi, 1),
-            "MACD":          round(macd_line, 3),
-            "MACD_Signal":   round(macd_signal, 3),
             "MACD_Hist":     round(macd_hist, 3),
-            # BB gardé comme info seulement, pas dans le score
             "BB_Pct":        round(bb_pct, 2),
             "Vol_Ratio":     round(vol_ratio, 2),
-            # Fondamentaux — seulement Rev_Growth utile en swing
             "Rev_Growth":    round(revenue_gr * 100, 1) if revenue_gr else None,
             # Patterns
             "Top_Pattern":   patterns_data["top_pattern"],
             "Patterns":      patterns_data["summary"],
             "Pattern_Score": patterns_data["bonus_score"],
             "Pattern_Badge": pattern_badge(patterns_data["bonus_score"]),
-            # R/R — filtre indépendant, pas dans le score
+            # R/R
             "Entree":        rr_data["entry"],
             "Stop":          rr_data["stop"],
             "Target":        rr_data["target"],
@@ -221,7 +223,7 @@ def fetch(ticker):
             "Resistance":    rr_data["resistance"],
             "RR_Quality":    rr_data["quality"],
             "RR_Badge":      risk_badge(rr_data["rr_ratio"], rr_data["risk_pct"]),
-            # Indicateurs avancés
+            # Avancés
             "TTM_Signal":    adv["ttm"]["signal"],
             "TTM_Score":     adv["ttm"]["score"],
             "TTM_Status":    adv["ttm"]["status"],
@@ -253,21 +255,14 @@ def fetch_parallel(tickers, max_workers=10):
             if data:
                 results.append(data)
             progress.progress(done / len(tickers))
-            status.markdown(f"🔬 Analyse complète `{done}/{len(tickers)}`...")
+            status.markdown(f"🔬 Analyse `{done}/{len(tickers)}`...")
         status.empty()
     return results
 
 # ─────────────────────────────
-# 🧠 SCORE IA
+# 🧠 SCORE IA — NETTOYÉ
 # ─────────────────────────────
 def ai_score(row):
-    """
-    Score technique pur — optimisé swing trading 5 jours.
-
-    Supprimé  : Bollinger position, Price_Up, R/R dans score, fondamentaux lourds
-    Conservé  : Trend, RSI, MACD, Volume, Patterns, Avancés
-    Total base : 100 pts (avant bonus patterns + avancés plafonnés à 100)
-    """
     score   = 0
     reasons = []
 
@@ -282,90 +277,79 @@ def ai_score(row):
     except Exception:
         return 0, ["Erreur calcul"]
 
-    # ── Trend MA50 / MA200 (35 pts) ──
-    # Le critère le plus important en swing — direction claire
+    # Trend MA (35 pts)
     if price > ma50 > ma200:
-        score += 35; reasons.append("✅ Trend haussière forte (prix>MA50>MA200)")
+        score += 35; reasons.append("✅ Trend forte (prix>MA50>MA200)")
     elif price > ma50 and price > ma200:
-        score += 25; reasons.append("✅ Prix au-dessus des deux MAs")
+        score += 25; reasons.append("✅ Prix > MA50 & MA200")
     elif price > ma200:
-        score += 15; reasons.append("~ Au-dessus MA200 seulement")
+        score += 15; reasons.append("~ Au-dessus MA200")
     else:
-        score += 0;  reasons.append("❌ Sous MA50 et MA200")
+        score += 0;  reasons.append("❌ Sous MAs")
 
-    # ── RSI (25 pts) ──
-    # Zone idéale swing : 45-65 (ni survendu ni suracheté)
+    # RSI (25 pts)
     if 45 <= rsi_val <= 65:
-        score += 25; reasons.append(f"✅ RSI idéal swing ({rsi_val})")
-    elif 65 < rsi_val <= 72:
-        score += 15; reasons.append(f"~ RSI momentum élevé ({rsi_val})")
+        score += 25; reasons.append(f"✅ RSI idéal ({rsi_val})")
     elif 35 <= rsi_val < 45:
-        score += 18; reasons.append(f"~ RSI zone rebond ({rsi_val})")
+        score += 18; reasons.append(f"~ RSI rebond ({rsi_val})")
+    elif 65 < rsi_val <= 72:
+        score += 15; reasons.append(f"~ RSI momentum ({rsi_val})")
     elif rsi_val < 35:
         score += 10; reasons.append(f"⚠️ RSI survente ({rsi_val})")
-    elif rsi_val > 72:
-        score += 5;  reasons.append(f"❌ RSI surachat ({rsi_val})")
     else:
-        score += 10
+        score += 5;  reasons.append(f"❌ RSI surachat ({rsi_val})")
 
-    # ── MACD Histogramme (20 pts) ──
-    # Histogramme positif ET croissant = momentum qui s'accélère
-    if macd_hist > 0.5:
-        score += 20; reasons.append(f"✅ MACD fort haussier ({round(macd_hist,3)})")
+    # MACD (20 pts)
+    if macd_hist > 0.3:
+        score += 20; reasons.append(f"✅ MACD fort ({round(macd_hist,3)})")
     elif macd_hist > 0:
         score += 14; reasons.append(f"~ MACD haussier ({round(macd_hist,3)})")
     elif macd_hist > -0.3:
-        score += 5;  reasons.append(f"~ MACD légèrement baissier")
+        score += 5;  reasons.append("~ MACD neutre")
     else:
-        score += 0;  reasons.append(f"❌ MACD baissier ({round(macd_hist,3)})")
+        score += 0;  reasons.append(f"❌ MACD baissier")
 
-    # ── Volume (20 pts) ──
-    # Volume sans Price_Up — ratio seul est plus fiable sur 1 semaine
+    # Volume (20 pts)
     if vol_ratio >= 2.0:
         score += 20; reasons.append(f"✅ Volume très fort ({vol_ratio}x)")
     elif vol_ratio >= 1.5:
         score += 15; reasons.append(f"✅ Volume fort ({vol_ratio}x)")
     elif vol_ratio >= 1.1:
-        score += 10; reasons.append(f"~ Volume normal+ ({vol_ratio}x)")
+        score += 10; reasons.append(f"~ Volume correct ({vol_ratio}x)")
     elif vol_ratio < 0.7:
         score += 2;  reasons.append(f"❌ Volume faible ({vol_ratio}x)")
     else:
         score += 6
 
-    # ── Momentum fondamental léger (5 pts max) ──
-    # Seulement croissance revenus — indicateur momentum, pas value
+    # Momentum fondamental (5 pts max)
     try:
         if rev_growth and float(rev_growth) > 10:
-            score += 5; reasons.append(f"✅ Croissance revenus +{rev_growth}%")
+            score += 5; reasons.append(f"✅ Croissance +{rev_growth}%")
         elif rev_growth and float(rev_growth) > 5:
             score += 2; reasons.append(f"~ Croissance +{rev_growth}%")
     except Exception:
         pass
 
-    # ── Bonus patterns (plafonné à 30 pts) ──
+    # Bonus patterns (max 30 pts)
     try:
-        pattern_bonus = int(row.get("Pattern_Score", 0) or 0)
-        if pattern_bonus > 0:
-            bonus = min(pattern_bonus, 30)
-            score += bonus
+        pb = int(row.get("Pattern_Score", 0) or 0)
+        if pb > 0:
+            score += min(pb, 30)
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
     except Exception:
         pass
 
-    # ── Bonus indicateurs avancés (plafonné à 30 pts) ──
+    # Bonus avancés (max 30 pts)
     try:
-        adv_score = int(row.get("ADV_Score", 0) or 0)
-        if adv_score > 0:
-            bonus = min(adv_score, 30)
-            score += bonus
-            ttm_sig = str(row.get("TTM_Signal") or "")
-            div_sig = str(row.get("DIV_Signal") or "")
-            ema_sig = str(row.get("EMA_Signal") or "")
-            if ttm_sig and ttm_sig != "None": reasons.append(f"✅ {ttm_sig[:35]}")
-            if div_sig and div_sig != "None": reasons.append(f"✅ {div_sig[:35]}")
-            if ema_sig and ema_sig != "None": reasons.append(f"✅ {ema_sig[:35]}")
+        adv = int(row.get("ADV_Score", 0) or 0)
+        if adv > 0:
+            score += min(adv, 30)
+            for sig_key in ["TTM_Signal", "DIV_Signal", "EMA_Signal"]:
+                s = str(row.get(sig_key) or "")
+                if s and s not in ["None", "—", ""]:
+                    reasons.append(f"✅ {s[:40]}")
     except Exception:
         pass
 
@@ -384,28 +368,25 @@ def claude_analysis(row, api_key, market_status):
     try:
         client = anthropic.Anthropic(api_key=api_key)
         regime = market_status.get("regime", "INCONNU")
-        rr_str = f"{row['RR_Ratio']}:1" if row['RR_Ratio'] else "N/A"
+        rr_str = f"{row.get('RR_Ratio','N/A')}:1"
 
         prompt = f"""Tu es un trader spécialisé en swing trading (lundi -> vendredi).
-Contexte : Marché {regime} | SPY vs MA50: {market_status.get('spy_vs_ma50','N/A')}% | {market_status.get('vix_label','VIX N/A')}
+Marché : {regime} | SPY vs MA50: {market_status.get('spy_vs_ma50','N/A')}% | {market_status.get('vix_label','VIX N/A')}
 
 Ticker: {row['Ticker']} ({row['Sector']})
-Prix: ${row['Prix']} | Entree: ${row['Entree']} | Stop: ${row['Stop']} | Target: ${row['Target']}
-R/R: {rr_str} | Risque: {row['Risque_Pct']}% | Gain: {row['Gain_Pct']}%
+Convergence: {row.get('Conv_N','N/A')}/6 signaux | Score final: {row.get('Score_Final','N/A')}/100
+Prix: ${row['Prix']} | Entree: ${row.get('Entree','N/A')} | Stop: ${row.get('Stop','N/A')} | Target: ${row.get('Target','N/A')}
+R/R: {rr_str} | Risque: {row.get('Risque_Pct','N/A')}% | Gain: {row.get('Gain_Pct','N/A')}%
 RSI: {row['RSI']} | MACD: {row['MACD_Hist']} | Vol: {row['Vol_Ratio']}x
-Score total: {row['AI Score']}/100 | Signal: {row.get('AI Signal Ajuste', row['AI Signal'])}
-
-Indicateurs avancés :
-- TTM Squeeze: {row.get('TTM_Signal', 'N/A')}
-- Divergence RSI: {row.get('DIV_Signal', 'N/A')}
-- EMA Alignement: {row.get('EMA_Signal', 'N/A')}
-- Pattern: {row['Top_Pattern']}
+TTM: {row.get('TTM_Signal','—')} | Div RSI: {row.get('DIV_Signal','—')} | EMA: {row.get('EMA_Level','—')}
+Pattern: {row.get('Top_Pattern','—')}
+Signaux actifs: {row.get('Conv_On','—')}
 
 En 6 lignes max :
 1) VERDICT (ACHETER/ATTENDRE/EVITER)
-2) Confirmes-tu entree ${row['Entree']} / stop ${row['Stop']} ?
-3) Argument principal (inclure signaux avancés si pertinents)
-4) Risque principal
+2) Confirmes-tu entree ${row.get('Entree','N/A')} / stop ${row.get('Stop','N/A')} ?
+3) Argument principal basé sur la convergence des signaux
+4) Risque principal cette semaine
 Direct, chiffré, sans disclaimer."""
 
         message = client.messages.create(
@@ -436,8 +417,7 @@ with st.sidebar:
     st.markdown("### ⚡ Mode de scan")
     use_prefilter = st.checkbox("Pré-filtre S&P 500 complet (503)", value=True)
     if use_prefilter:
-        st.markdown("<div style='color:#4a90d0;font-size:0.78rem;'>✅ 503 actions · 2 passes automatiques</div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='color:#4a90d0;font-size:0.78rem;'>✅ 503 actions · 2 passes automatiques</div>", unsafe_allow_html=True)
         with st.expander("⚙️ Critères pré-filtre"):
             min_price    = st.number_input("Prix min ($)", value=10, min_value=1)
             max_price    = st.number_input("Prix max ($)", value=2000, min_value=50)
@@ -454,35 +434,33 @@ with st.sidebar:
     nb_workers = st.slider("🔀 Threads parallèles", 5, 20, 10)
 
     st.markdown("---")
+    st.markdown("### 🎯 Rapport Top Trades")
+    top_n        = st.radio("Nombre de trades", [10, 20], index=0, horizontal=True)
+    min_signals  = st.slider("Signaux convergents min", 2, 6, 3)
+    min_rr_conv  = st.slider("R/R minimum", 1.0, 3.0, 1.5, step=0.1)
+
+    st.markdown("---")
     st.markdown("### 🤖 Claude IA")
     api_key    = st.text_input("Clé API Anthropic", type="password")
     use_claude = st.checkbox("Activer analyse Claude", value=False)
 
     st.markdown("---")
-    st.markdown("### 🔍 Filtres")
+    st.markdown("### 🔍 Filtres tableau")
     min_score     = st.slider("Score min", 0, 100, 50)
-    min_rr        = st.slider("R/R min", 0.0, 3.0, 1.5, step=0.1)
-    max_risk      = st.slider("Risque max (%)", 1.0, 10.0, 5.0, step=0.5)
     signal_filter = st.multiselect(
         "Signaux",
         ["🟢 STRONG BUY","🟢 BUY","🟡 HOLD","🔴 AVOID","🟡 HOLD ⚠️"],
         default=["🟢 STRONG BUY","🟢 BUY"]
     )
-    only_patterns  = st.checkbox("Avec patterns seulement", value=False)
-    only_good_rr   = st.checkbox("R/R >= 2.0 seulement", value=False)
-    only_adv       = st.checkbox("🔬 Avec signaux avancés seulement", value=False)
-    min_adv_score  = st.slider("Score avancé min", 0, 43, 0)
 
     st.markdown("---")
-    st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro</div>", unsafe_allow_html=True)
 
 # ─────────────────────────────
 # 🚀 MAIN
 # ─────────────────────────────
 st.markdown("# 📊 S&P 500 IA Screener Pro")
-st.markdown("<div style='color:#64748b;margin-bottom:1.5rem;'>Technique · Patterns · R/R · TTM Squeeze · Divergence · EMA · Marché · Claude IA</div>",
-            unsafe_allow_html=True)
+st.markdown("<div style='color:#64748b;margin-bottom:1.5rem;'>Convergence · Patterns · R/R · TTM · Divergence · EMA · Marché · Claude IA</div>", unsafe_allow_html=True)
 
 # BANDEAU MARCHÉ
 with st.spinner("Vérification marché global..."):
@@ -503,19 +481,18 @@ st.markdown(f"""
 with st.expander("💡 Conseils de trading"):
     advice_list = market_advice(market_status)
     cols = st.columns(2)
-    for i, advice in enumerate(advice_list):
-        cols[i%2].markdown(f"<div class='advice-box'>{advice}</div>", unsafe_allow_html=True)
+    for i, adv in enumerate(advice_list):
+        cols[i%2].markdown(f"<div class='advice-box'>{adv}</div>", unsafe_allow_html=True)
     c1,c2,c3,c4 = st.columns(4)
-    spy_color = "#00ff88" if market_status.get("spy_vs_ma50",0) >= 0 else "#f87171"
-    qqq_color = "#00ff88" if market_status.get("qqq_vs_ma50",0) >= 0 else "#f87171"
-    vix_val   = market_status.get("vix", None)
-    vix_color = "#00ff88" if vix_val and vix_val < 20 else "#fbbf24" if vix_val and vix_val < 30 else "#f87171"
-    spy_rsi   = market_status.get("spy_rsi", None)
+    spy_color = "#00ff88" if market_status.get("spy_vs_ma50",0)>=0 else "#f87171"
+    qqq_color = "#00ff88" if market_status.get("qqq_vs_ma50",0)>=0 else "#f87171"
+    vix_val   = market_status.get("vix",None)
+    vix_color = "#00ff88" if vix_val and vix_val<20 else "#fbbf24" if vix_val and vix_val<30 else "#f87171"
     for col, val, label, clr in [
         (c1, f"{'+' if market_status.get('spy_vs_ma50',0)>=0 else ''}{market_status.get('spy_vs_ma50','—')}%", "SPY vs MA50", spy_color),
         (c2, f"{'+' if market_status.get('qqq_vs_ma50',0)>=0 else ''}{market_status.get('qqq_vs_ma50','—')}%", "QQQ vs MA50", qqq_color),
         (c3, vix_val if vix_val else "—", "VIX", vix_color),
-        (c4, spy_rsi if spy_rsi else "—", "RSI SPY", "#00ff88"),
+        (c4, market_status.get("spy_rsi","—"), "RSI SPY", "#00ff88"),
     ]:
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value" style="color:{clr}">{val}</div>
@@ -531,23 +508,19 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
         st.markdown("### ⚡ Passe 1 — Pré-filtre rapide")
         pf_prog = st.progress(0)
         pf_stat = st.empty()
-
         def pf_cb(done, total):
-            pf_prog.progress(done / total)
+            pf_prog.progress(done/total)
             pf_stat.markdown(f"⚡ Pré-filtre `{done}/{total}`...")
-
         pf_result = run_prefilter(SP500_TICKERS, max_workers=20, progress_callback=pf_cb)
         pf_stat.empty()
         tickers_to_analyze = pf_result["passed"]
-
-        st.markdown(f"""
-        <div class="prefilter-banner">
+        st.markdown(f"""<div class="prefilter-banner">
             ⚡ PASSE 1 TERMINÉE &nbsp;|&nbsp;
             <span style="color:#00ff88">{pf_result['n_passed']} retenues</span>
-            &nbsp;/&nbsp; {pf_result['total']} &nbsp;|&nbsp;
-            {pf_result['n_rejected']} éliminées &nbsp;|&nbsp; {pf_result['pass_rate']}% de passage
+            &nbsp;/&nbsp; {pf_result['total']}
+            &nbsp;|&nbsp; {pf_result['n_rejected']} éliminées
+            &nbsp;|&nbsp; {pf_result['pass_rate']}% passage
         </div>""", unsafe_allow_html=True)
-
         with st.expander(f"🗑️ {pf_result['n_rejected']} actions éliminées"):
             st.dataframe(pd.DataFrame([
                 {"Ticker": t, "Raison": pf_result['details'][t]}
@@ -574,115 +547,180 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     df["AI Reasons"] = scores_data.apply(lambda x: " | ".join(x[1]))
 
     df = apply_market_filter(df, market_status)
-    df.rename(columns={"AI Signal Ajusté": "AI Signal Ajuste"}, errors="ignore", inplace=True)
-    df = df.sort_values("AI Score Ajusté", ascending=False).reset_index(drop=True)
+    df.rename(columns={"AI Signal Ajusté":"AI Signal Ajuste","AI Score Ajusté":"AI Score Ajuste"}, errors="ignore", inplace=True)
+    if "AI Score Ajuste" not in df.columns:
+        df["AI Score Ajuste"] = df["AI Score"]
+    if "AI Signal Ajuste" not in df.columns:
+        df["AI Signal Ajuste"] = df["AI Signal"]
+    df = df.sort_values("AI Score Ajuste", ascending=False).reset_index(drop=True)
 
-    # Filtres
-    df_filtered = df[df["AI Score Ajusté"] >= min_score]
-    if signal_filter:
-        df_filtered = df_filtered[df_filtered["AI Signal Ajuste"].isin(signal_filter)]
-    if only_patterns:
-        df_filtered = df_filtered[df_filtered["Pattern_Score"] > 0]
-    if only_good_rr:
-        df_filtered = df_filtered[df_filtered["RR_Ratio"] >= 2.0]
-    if only_adv:
-        df_filtered = df_filtered[df_filtered["ADV_Score"] > 0]
-    if min_adv_score > 0:
-        df_filtered = df_filtered[df_filtered["ADV_Score"] >= min_adv_score]
-    df_filtered = df_filtered[
-        (df_filtered["RR_Ratio"].isna()) | (df_filtered["RR_Ratio"] >= min_rr)
-    ]
-    df_filtered = df_filtered[
-        (df_filtered["Risque_Pct"].isna()) | (df_filtered["Risque_Pct"] <= max_risk)
-    ]
+    # ════════════════════════════════════════
+    # 🎯 RAPPORT DE CONVERGENCE — TOP TRADES
+    # ════════════════════════════════════════
+    st.markdown("---")
+    st.markdown(f"## 🎯 Rapport du Dimanche — Top {top_n} Trades Convergents")
+    st.markdown(f"<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Semaine du {datetime.now().strftime('%d %B %Y')} · Marché {regime} · Min {min_signals}/6 signaux convergents</div>", unsafe_allow_html=True)
 
-    # MÉTRIQUES
+    # Conseils d'exécution semaine
+    day_advice = get_day_of_week_advice(regime)
+    with st.expander("📅 Plan d'exécution de la semaine"):
+        cols = st.columns(3)
+        days = [("Lundi","🟢"), ("Mercredi","🟡"), ("Vendredi","🔴")]
+        for i, (day, em) in enumerate(days):
+            cols[i].markdown(f"""<div class="advice-box">
+                <strong>{em} {day}</strong><br>{day_advice.get(day,'—')}
+            </div>""", unsafe_allow_html=True)
+
+    # Construire le rapport de convergence
+    report = build_trade_report(
+        df,
+        top_n=top_n,
+        min_signals=min_signals,
+        min_rr=min_rr_conv
+    )
+
+    if report.empty:
+        st.warning(f"⚠️ Aucun titre avec {min_signals}+ signaux convergents. Réduire le filtre dans la sidebar.")
+    else:
+        st.markdown(f"<div style='color:#00ff88;font-size:0.85rem;margin-bottom:16px;'>✅ {len(report)} opportunités identifiées</div>", unsafe_allow_html=True)
+
+        for idx, row in report.iterrows():
+            rank      = idx + 1
+            n_sig     = int(row.get("Conv_N", 0))
+            conv_bar  = str(row.get("Conv_Bar", "░░░░░░"))
+            conv_lbl  = str(row.get("Conv_Label", ""))
+            conv_clr  = str(row.get("Conv_Color", "#64748b"))
+            score_fin = row.get("Score_Final", 0)
+            rr        = row.get("RR_Ratio", None)
+            signals_on  = str(row.get("Conv_On", ""))
+            signals_off = str(row.get("Conv_Off", ""))
+
+            # Choisir le style de carte selon le rang
+            if rank == 1:
+                card_class = "trade-card-gold"
+                rank_color = "#ffd700"
+            elif n_sig >= 5:
+                card_class = "trade-card-green"
+                rank_color = "#00ff88"
+            else:
+                card_class = "trade-card"
+                rank_color = "#4a90d0"
+
+            st.markdown(f"""
+            <div class="{card_class}">
+
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+                    <span class="rank-badge" style="color:{rank_color}">#{rank}</span>
+                    <span class="ticker-badge">{row['Ticker']}</span>
+                    <span style="color:#94a3b8;font-size:0.85rem;">{row['Sector']}</span>
+                    <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:0.8rem;color:{conv_clr};">
+                        {conv_lbl}
+                    </span>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Convergence</div>
+                        <div class="conv-bar" style="color:{conv_clr};">{conv_bar}</div>
+                        <div style="font-size:11px;color:{conv_clr};font-family:'Space Mono',monospace;">{n_sig}/6 signaux</div>
+                    </div>
+                    <div style="border-left:1px solid #1e3a5f;padding-left:20px;">
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Score Final</div>
+                        <div style="font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;color:{conv_clr};">{score_fin}</div>
+                        <div style="font-size:11px;color:#64748b;">Score composite</div>
+                    </div>
+                    <div style="border-left:1px solid #1e3a5f;padding-left:20px;">
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.1em;">Prix actuel</div>
+                        <div style="font-family:'Space Mono',monospace;font-size:1.3rem;font-weight:700;color:#e0f0ff;">${row['Prix']}</div>
+                        <div style="font-size:11px;color:#64748b;">RSI {row['RSI']} | Vol {row['Vol_Ratio']}x</div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #00ff8833;">
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🎯 ENTRÉE (Lundi)</div>
+                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#e0f0ff;">${row.get('Entree','—')}</div>
+                    </div>
+                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #f8717133;">
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🛑 STOP-LOSS</div>
+                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#f87171;">${row.get('Stop','—')} <span style="font-size:0.75rem;">(-{row.get('Risque_Pct','—')}%)</span></div>
+                    </div>
+                    <div style="background:#00000033;border-radius:8px;padding:10px;border:1px solid #00ff8833;">
+                        <div style="font-size:10px;color:#3a5070;text-transform:uppercase;">🏆 VENTE (Jeu/Ven)</div>
+                        <div style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#00ff88;">${row.get('Target','—')} <span style="font-size:0.75rem;">(+{row.get('Gain_Pct','—')}%)</span></div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
+                        📊 R/R: <strong style="color:{'#00ff88' if rr and rr>=2 else '#fbbf24'}">{rr}:1</strong>
+                    </div>
+                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
+                        ATR: <strong>{row.get('ATR_Pct','—')}%</strong>
+                    </div>
+                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
+                        Support: <strong>${row.get('Support','—')}</strong>
+                    </div>
+                    <div style="font-family:'Space Mono',monospace;font-size:0.85rem;">
+                        Résistance: <strong>${row.get('Resistance','—')}</strong>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Signaux actifs</div>
+                    <div style="font-size:0.82rem;color:#86efac;line-height:1.8;">{signals_on.replace(' | ','<br>') if signals_on else '—'}</div>
+                </div>
+
+                {f'<div style="margin-top:6px;"><div style="font-size:10px;color:#3a5070;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Signaux manquants</div><div style="font-size:0.82rem;color:#f87171;line-height:1.8;">{signals_off.replace(chr(124)+" ","<br>")}</div></div>' if signals_off else ''}
+
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── MÉTRIQUES GLOBALES ──
     st.markdown("---")
     st.markdown("### 📈 Vue d'ensemble")
-    col1,col2,col3,col4,col5,col6,col7,col8 = st.columns(8)
+    ai_col = "AI Score Ajuste"
+    sig_col = "AI Signal Ajuste"
+    col1,col2,col3,col4,col5,col6,col7 = st.columns(7)
     for col, val, label in zip(
-        [col1,col2,col3,col4,col5,col6,col7,col8],
-        [
-            len(df),
-            len(df[df["AI Signal Ajuste"]=="🟢 STRONG BUY"]),
-            len(df[df["AI Signal Ajuste"]=="🟢 BUY"]),
-            len(df[df["AI Signal Ajuste"]=="🟡 HOLD"]),
-            len(df[df["AI Signal Ajuste"]=="🔴 AVOID"]),
-            len(df[df["Pattern_Score"]>0]),
-            len(df[df["RR_Ratio"]>=2.0]) if "RR_Ratio" in df.columns else 0,
-            len(df[df["ADV_Score"]>=10]) if "ADV_Score" in df.columns else 0,
+        [col1,col2,col3,col4,col5,col6,col7],
+        [len(df),
+         len(df[df[sig_col]=="🟢 STRONG BUY"]),
+         len(df[df[sig_col]=="🟢 BUY"]),
+         len(df[df[sig_col]=="🟡 HOLD"]),
+         len(df[df[sig_col]=="🔴 AVOID"]),
+         len(report),
+         len(df[df.get("Conv_N",pd.Series([0]*len(df)))>=4]) if "Conv_N" in df.columns else 0,
         ],
-        ["Analysées","Strong Buy","Buy","Hold","Avoid","Patterns","R/R≥2","Signaux Adv"]
+        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv ≥4"]
     ):
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value">{val}</div>
             <div class="metric-label">{label}</div>
         </div>""", unsafe_allow_html=True)
 
-    # SIGNAUX AVANCÉS TOP
-    st.markdown("---")
-    st.markdown("### 🔬 Top Signaux Avancés (TTM · Divergence · EMA)")
-    top_adv = df[df["ADV_Score"] >= 10].sort_values("ADV_Score", ascending=False).head(8)
-    if not top_adv.empty:
-        for _, row in top_adv.iterrows():
-            adv_color = "#a78bfa" if row["ADV_Score"] >= 25 else "#818cf8" if row["ADV_Score"] >= 15 else "#6366f1"
-            st.markdown(f"""
-            <div class="advanced-box">
-                <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:{adv_color}">{row['ADV_Badge']}</strong>
-                &nbsp;|&nbsp; +{row['ADV_Score']} pts avancés
-                &nbsp;|&nbsp; Score total: <strong>{row['AI Score Ajusté']}/100</strong>
-                <br>
-                {f"🔥 {row['TTM_Signal']}" if row.get('TTM_Signal') else ""}
-                {f"&nbsp;|&nbsp; 📊 {row['DIV_Signal']}" if row.get('DIV_Signal') else ""}
-                {f"&nbsp;|&nbsp; 📈 {row['EMA_Signal']}" if row.get('EMA_Signal') else ""}
-                <br>
-                <span style="color:#94a3b8;font-size:0.78rem;">
-                    Pattern: {row['Top_Pattern']} &nbsp;|&nbsp; R/R: {row.get('RR_Ratio','N/A')}:1
-                    &nbsp;|&nbsp; Secteur: {row['Sector']}
-                </span>
-            </div>""", unsafe_allow_html=True)
-    else:
-        st.info("Aucun signal avancé fort détecté.")
-
-    # PLANS DE TRADE
-    st.markdown("---")
-    st.markdown("### 📐 Plans de Trade — Top 5")
-    top5_rr = df_filtered[df_filtered["RR_Ratio"].notna()].head(5)
-    if not top5_rr.empty:
-        for _, row in top5_rr.iterrows():
-            rr  = row["RR_Ratio"]
-            clr = "#00ff88" if rr >= 2.5 else "#4ade80" if rr >= 2.0 else "#fbbf24"
-            sig = row.get("AI Signal Ajuste", row["AI Signal"])
-            adv_info = f" | 🔬 {row['ADV_Badge']}" if row.get("ADV_Score", 0) >= 10 else ""
-            st.markdown(f"""
-            <div class="trade-plan-box">
-                <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:{clr}">{row['RR_Badge']}</strong>
-                &nbsp;|&nbsp; Score: <strong>{row['AI Score Ajusté']}/100</strong>
-                &nbsp;|&nbsp; {sig}{adv_info}
-                <br><br>
-                🎯 <strong>Entrée:</strong> ${row['Entree']}
-                &nbsp; 🛑 <strong>Stop:</strong> ${row['Stop']} <span style="color:#f87171">(-{row['Risque_Pct']}%)</span>
-                &nbsp; 🏆 <strong>Target:</strong> ${row['Target']} <span style="color:#00ff88">(+{row['Gain_Pct']}%)</span>
-                <br>
-                R/R: {rr}:1 | ATR: {row['ATR_Pct']}% | Support: ${row['Support']} | Résistance: ${row['Resistance']}
-                <br>
-                <span style="color:#94a3b8;font-size:0.78rem;">
-                    TTM: {row.get('TTM_Signal','—')} | Div: {row.get('DIV_Signal','—')} | EMA: {row.get('EMA_Level','—')}
-                </span>
-            </div>""", unsafe_allow_html=True)
-
-    # GRAPHIQUES
+    # ── GRAPHIQUES ──
     st.markdown("---")
     st.markdown("### 📊 Visualisations")
     import plotly.express as px
-    tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs([
-        "Distribution","RSI vs Score","Top 10","Patterns","R/R","Signaux Avancés"
-    ])
+    tab1,tab2,tab3,tab4 = st.tabs(["Convergence","Distribution","RSI vs Score","R/R Ratio"])
 
     with tab1:
-        fig = px.histogram(df, x="AI Score Ajusté", nbins=20,
+        if not report.empty and "Conv_N" in report.columns:
+            fig_c = px.bar(report, x="Ticker", y="Conv_N",
+                           color="Score_Final",
+                           color_continuous_scale=["#1e3a5f","#00ff88"],
+                           hover_data=["Score_Final","RR_Ratio","Top_Pattern"],
+                           title=f"Top {top_n} — Convergence des signaux")
+            fig_c.add_hline(y=6, line_dash="dot", line_color="#ffd700", annotation_text="6/6 parfait")
+            fig_c.add_hline(y=4, line_dash="dash", line_color="#00ff88", annotation_text="4/6 minimum recommandé")
+            fig_c.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                                font_color="#e2e8f0", title_font_color="#00ff88",
+                                xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f",range=[0,7]))
+            st.plotly_chart(fig_c, use_container_width=True)
+
+    with tab2:
+        fig = px.histogram(df, x=ai_col, nbins=20,
                            color_discrete_sequence=["#00ff88"],
                            title=f"Distribution — {regime} — {len(df)} actions")
         fig.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
@@ -690,103 +728,89 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                           xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
         st.plotly_chart(fig, use_container_width=True)
 
-    with tab2:
-        fig2 = px.scatter(df, x="RSI", y="AI Score Ajusté", color="AI Signal Ajuste",
+    with tab3:
+        fig2 = px.scatter(df, x="RSI", y=ai_col, color=sig_col,
                           hover_data=["Ticker","Top_Pattern","RR_Ratio","ADV_Badge"],
                           color_discrete_map={
                               "🟢 STRONG BUY":"#00ff88","🟢 BUY":"#4ade80",
                               "🟡 HOLD":"#fbbf24","🟡 HOLD ⚠️":"#fb923c","🔴 AVOID":"#f87171"
-                          }, title="RSI vs Score ajusté")
+                          }, title="RSI vs Score")
         fig2.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                            font_color="#e2e8f0", title_font_color="#00ff88",
                            xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
         st.plotly_chart(fig2, use_container_width=True)
 
-    with tab3:
-        fig3 = px.bar(df.head(10), x="Ticker", y="AI Score Ajusté", color="AI Score Ajusté",
-                      color_continuous_scale=["#1e3a5f","#00ff88"], title="Top 10 scores")
-        fig3.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                           font_color="#e2e8f0", title_font_color="#00ff88",
-                           xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
-        st.plotly_chart(fig3, use_container_width=True)
-
     with tab4:
-        df_pat = df[df["Pattern_Score"]>0].sort_values("Pattern_Score",ascending=False).head(15)
-        if not df_pat.empty:
-            fig4 = px.bar(df_pat, x="Ticker", y="Pattern_Score", color="Pattern_Score",
-                          color_continuous_scale=["#1e3a5f","#fbbf24"],
-                          hover_data=["Top_Pattern","AI Score Ajusté"], title="Top Patterns")
-            fig4.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                               font_color="#e2e8f0", title_font_color="#00ff88",
-                               xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
-            st.plotly_chart(fig4, use_container_width=True)
-
-    with tab5:
         df_rr = df[df["RR_Ratio"].notna()].sort_values("RR_Ratio",ascending=False).head(15)
         if not df_rr.empty:
             fig5 = px.bar(df_rr, x="Ticker", y="RR_Ratio", color="RR_Ratio",
                           color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
                           hover_data=["Entree","Stop","Target","Risque_Pct","Gain_Pct"],
                           title="Top R/R Ratio")
-            fig5.add_hline(y=2.0, line_dash="dash", line_color="#fbbf24",
-                           annotation_text="R/R min (2:1)")
+            fig5.add_hline(y=2.0, line_dash="dash", line_color="#fbbf24", annotation_text="R/R min (2:1)")
             fig5.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                                font_color="#e2e8f0", title_font_color="#00ff88",
                                xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
             st.plotly_chart(fig5, use_container_width=True)
 
-    with tab6:
-        df_adv = df[df["ADV_Score"]>0].sort_values("ADV_Score",ascending=False).head(15)
-        if not df_adv.empty:
-            fig6 = px.bar(df_adv, x="Ticker", y="ADV_Score", color="ADV_Score",
-                          color_continuous_scale=["#4f46e5","#a78bfa"],
-                          hover_data=["TTM_Status","DIV_Type","EMA_Level","AI Score Ajusté"],
-                          title="Top Signaux Avancés (TTM + Divergence + EMA)")
-            fig6.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-                               font_color="#e2e8f0", title_font_color="#00ff88",
-                               xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
-            st.plotly_chart(fig6, use_container_width=True)
-
-    # TABLEAU
+    # ── TABLEAU COMPLET ──
     st.markdown("---")
-    st.markdown(f"### 🏆 Résultats ({len(df_filtered)} actions)")
+    df_filtered = df[df[ai_col] >= min_score]
+    if signal_filter:
+        df_filtered = df_filtered[df_filtered[sig_col].isin(signal_filter)]
+    st.markdown(f"### 📋 Tableau complet ({len(df_filtered)} actions)")
     cols_display = [
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
         "Pattern_Badge","Top_Pattern","Pattern_Score",
-        "AI Score","AI Score Ajusté","AI Signal Ajuste","AI Reasons"
+        "AI Score","AI Score Ajuste","AI Signal Ajuste","AI Reasons"
     ]
     cols_display = [c for c in cols_display if c in df_filtered.columns]
     st.dataframe(df_filtered[cols_display], use_container_width=True, height=400)
 
-    # CLAUDE
+    # ── CLAUDE ──
     if use_claude and api_key:
         st.markdown("---")
-        st.markdown("### 🤖 Analyse Claude IA — Top 5")
-        for _, row in df_filtered.head(5).iterrows():
+        st.markdown("### 🤖 Analyse Claude IA — Top 5 convergents")
+        top5 = report.head(5)
+        for _, row in top5.iterrows():
             with st.spinner(f"Claude analyse {row['Ticker']}..."):
                 analysis = claude_analysis(row, api_key, market_status)
-            sig = row.get("AI Signal Ajuste", row["AI Signal"])
+            sig = row.get("AI Signal Ajuste", row.get("AI Signal",""))
             st.markdown(f"""
             <div class="ai-analysis-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:#00ff88">{sig}</strong> — {row['AI Score Ajusté']}/100
-                &nbsp;|&nbsp; R/R {row.get('RR_Ratio','N/A')}:1
-                &nbsp;|&nbsp; <span style="color:#a78bfa">{row.get('ADV_Badge','—')}</span>
+                <strong style="color:#00ff88">{sig}</strong>
+                — Score {row.get('Score_Final','—')}/100
+                &nbsp;|&nbsp; Conv {row.get('Conv_N','—')}/6
+                &nbsp;|&nbsp; R/R {row.get('RR_Ratio','—')}:1
                 <br><br>{analysis}
             </div>""", unsafe_allow_html=True)
             time.sleep(0.5)
     elif use_claude and not api_key:
         st.warning("⚠️ Entrez votre clé API Anthropic.")
 
-    # EXPORT
+    # ── EXPORT ──
     st.markdown("---")
-    excel = to_excel(df_filtered[cols_display])
-    st.download_button(
-        "⬇️ Télécharger Excel",
-        data=excel,
-        file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    col_exp1, col_exp2 = st.columns(2)
+    with col_exp1:
+        st.markdown("**Export rapport Top trades**")
+        if not report.empty:
+            excel_report = to_excel(report[cols_display if all(c in report.columns for c in cols_display) else [c for c in cols_display if c in report.columns]])
+            st.download_button(
+                f"⬇️ Top {top_n} — Rapport convergence",
+                data=excel_report,
+                file_name=f"top{top_n}_convergence_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+    with col_exp2:
+        st.markdown("**Export tableau complet**")
+        excel_full = to_excel(df_filtered[[c for c in cols_display if c in df_filtered.columns]])
+        st.download_button(
+            "⬇️ Tableau complet",
+            data=excel_full,
+            file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
