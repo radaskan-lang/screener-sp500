@@ -267,17 +267,20 @@ def ai_score(row):
     score   = 0
     reasons = []
 
-    price      = row["Prix"]
-    ma50       = row["MA50"]
-    ma200      = row["MA200"]
-    rsi_val    = row["RSI"]
-    macd_hist  = row["MACD_Hist"]
-    bb_pct     = row["BB_Pct"]
-    vol_ratio  = row["Vol_Ratio"]
-    price_up   = row["Price_Up"]
-    pe         = row["PE"]
-    rev_growth = row["Rev_Growth"]
-    net_margin = row["Net_Margin"]
+    try:
+        price      = float(row.get("Prix", 0) or 0)
+        ma50       = float(row.get("MA50", 0) or 0)
+        ma200      = float(row.get("MA200", 0) or 0)
+        rsi_val    = float(row.get("RSI", 50) or 50)
+        macd_hist  = float(row.get("MACD_Hist", 0) or 0)
+        bb_pct     = float(row.get("BB_Pct", 0.5) or 0.5)
+        vol_ratio  = float(row.get("Vol_Ratio", 1) or 1)
+        price_up   = bool(row.get("Price_Up", False))
+        pe         = row.get("PE", None)
+        rev_growth = row.get("Rev_Growth", None)
+        net_margin = row.get("Net_Margin", None)
+    except Exception:
+        return 0, ["Erreur calcul"]
 
     # Trend (30 pts)
     if price > ma50 > ma200:
@@ -349,15 +352,18 @@ def ai_score(row):
         score += 3; reasons.append(f"R/R {rr}:1")
 
     # Bonus indicateurs avancés
-    adv_score = row.get("ADV_Score", 0)
-    if adv_score > 0:
-        score += adv_score
-        ttm_sig = row.get("TTM_Signal")
-        div_sig = row.get("DIV_Signal")
-        ema_sig = row.get("EMA_Signal")
-        if ttm_sig: reasons.append(f"TTM: {ttm_sig[:30]}")
-        if div_sig: reasons.append(f"Div: {div_sig[:30]}")
-        if ema_sig: reasons.append(f"EMA: {ema_sig[:30]}")
+    try:
+        adv_score = int(row.get("ADV_Score", 0) or 0)
+        if adv_score > 0:
+            score += adv_score
+            ttm_sig = row.get("TTM_Signal") or ""
+            div_sig = row.get("DIV_Signal") or ""
+            ema_sig = row.get("EMA_Signal") or ""
+            if ttm_sig: reasons.append(f"TTM: {str(ttm_sig)[:30]}")
+            if div_sig: reasons.append(f"Div: {str(div_sig)[:30]}")
+            if ema_sig: reasons.append(f"EMA: {str(ema_sig)[:30]}")
+    except Exception:
+        pass
 
     return min(score, 100), reasons
 
