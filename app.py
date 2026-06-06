@@ -13,6 +13,7 @@ from market_filter import get_market_status, apply_market_filter, market_advice
 from pre_filter import run_prefilter, PREFILTER_CONFIG
 from advanced_indicators import detect_advanced_signals
 from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
+from backtest import run_backtest, backtest_summary
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -499,6 +500,147 @@ with st.expander("💡 Conseils de trading"):
             <div class="metric-label">{label}</div>
         </div>""", unsafe_allow_html=True)
 
+# ─────────────────────────────────────────
+# 📊 SECTION BACKTEST
+# ─────────────────────────────────────────
+st.markdown("---")
+st.markdown("## 📊 Validation — Backtest du Système")
+st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Teste les signaux sur 52 semaines de données historiques réelles · Distinct du scan hebdomadaire</div>", unsafe_allow_html=True)
+
+with st.expander("🔬 Lancer le Backtest", expanded=False):
+    bt_col1, bt_col2 = st.columns(2)
+    with bt_col1:
+        bt_tickers_raw = st.text_area(
+            "Tickers à backtester (un par ligne)",
+            value="AAPL\nMSFT\nNVDA\nGOOGL\nMETA\nAMZN\nTSLA\nAVGO\nJPM\nV",
+            height=180
+        )
+        bt_tickers = [t.strip().upper() for t in bt_tickers_raw.strip().split("\n") if t.strip()]
+    with bt_col2:
+        bt_workers = st.slider("Threads backtest", 3, 10, 5)
+        st.markdown(f"**{len(bt_tickers)} tickers** × ~52 semaines = ~**{len(bt_tickers)*52} trades simulés**")
+        st.markdown(f"Durée estimée : ~**{max(1, len(bt_tickers)//5)} minutes**")
+        st.markdown("**Logique :** Entrée lundi · Stop ATR×1.5 · Target ATR×3 · Sortie vendredi si aucun niveau atteint")
+
+    if st.button("▶ Lancer le Backtest", key="bt_btn"):
+        bt_prog = st.progress(0)
+        bt_stat = st.empty()
+        def bt_cb(done, total):
+            bt_prog.progress(done / total)
+            bt_stat.markdown(f"🔬 Backtest `{done}/{total}` tickers...")
+
+        df_bt = run_backtest(bt_tickers, weeks=52, max_workers=bt_workers, progress_callback=bt_cb)
+        bt_stat.empty()
+
+        if df_bt.empty:
+            st.error("❌ Aucun trade simulé.")
+        else:
+            stats = backtest_summary(df_bt)
+            st.markdown("### 📈 Résultats")
+
+            # Métriques
+            m1,m2,m3,m4,m5,m6 = st.columns(6)
+            wc  = "#00ff88" if stats["win_rate"]>=55 else "#fbbf24" if stats["win_rate"]>=45 else "#f87171"
+            pfc = "#00ff88" if stats["profit_factor"]>=1.5 else "#fbbf24" if stats["profit_factor"]>=1.0 else "#f87171"
+            exc = "#00ff88" if stats["expectancy"]>0 else "#f87171"
+            for col, val, label, clr in [
+                (m1, stats['total'],         "Trades", "#4a90d0"),
+                (m2, f"{stats['win_rate']}%","Win Rate", wc),
+                (m3, stats['profit_factor'], "Profit Factor", pfc),
+                (m4, f"{stats['expectancy']}%","Expectancy", exc),
+                (m5, f"+{stats['avg_win']}%","Gain moyen", "#00ff88"),
+                (m6, f"{stats['avg_loss']}%","Perte moyenne","#f87171"),
+            ]:
+                col.markdown(f"""<div class="metric-card">
+                    <div class="metric-value" style="color:{clr};font-size:1.3rem;">{val}</div>
+                    <div class="metric-label">{label}</div>
+                </div>""", unsafe_allow_html=True)
+
+            st.markdown("")
+            s1,s2,s3,s4 = st.columns(4)
+            s1.metric("Meilleur trade",  f"+{stats['best_trade']}%")
+            s2.metric("Pire trade",      f"{stats['worst_trade']}%")
+            s3.metric("Pertes consécutives max", stats["max_consec_loss"])
+            s4.metric("PnL cumulé total", f"{stats['total_pnl']}%")
+
+            # Stats par score et signaux
+            st.markdown("---")
+            sc1, sc2 = st.columns(2)
+            with sc1:
+                st.markdown("**📊 Par niveau de score**")
+                for label, data in stats["score_stats"].items():
+                    wr = data["win_rate"]
+                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
+                    st.markdown(f"{ic} **{label}** — Win: `{wr}%` | PnL moy: `{data['avg_pnl']}%` | N=`{data['n']}`")
+            with sc2:
+                st.markdown("**🎯 Par signaux convergents**")
+                for label, data in stats["signal_stats"].items():
+                    wr = data["win_rate"]
+                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
+                    st.markdown(f"{ic} **{label}** — Win: `{wr}%` | PnL moy: `{data['avg_pnl']}%` | N=`{data['n']}`")
+
+            # Graphiques
+            st.markdown("---")
+            import plotly.express as px
+            import plotly.graph_objects as go
+
+            bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Distribution PnL","Win Rate par score","Courbe de capital"])
+
+            with bt_tab1:
+                fig_pnl = px.histogram(df_bt, x="pnl_pct", nbins=40, color="result",
+                    color_discrete_map={"WIN":"#00ff88","LOSS":"#f87171","BREAKEVEN":"#fbbf24"},
+                    title="Distribution des PnL")
+                fig_pnl.add_vline(x=0, line_dash="dash", line_color="#ffffff66")
+                fig_pnl.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                    font_color="#e2e8f0", title_font_color="#00ff88",
+                    xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
+                st.plotly_chart(fig_pnl, use_container_width=True)
+
+            with bt_tab2:
+                df_bt["score_bucket"] = pd.cut(df_bt["score"],
+                    bins=[0,40,50,60,70,80,101],
+                    labels=["<40","40-50","50-60","60-70","70-80","≥80"])
+                wr_by_score = df_bt.groupby("score_bucket", observed=True).apply(
+                    lambda x: round(len(x[x["result"]=="WIN"])/len(x)*100, 1)
+                ).reset_index()
+                wr_by_score.columns = ["Score","Win Rate %"]
+                fig_wr = px.bar(wr_by_score, x="Score", y="Win Rate %",
+                    color="Win Rate %", color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
+                    title="Win Rate % par score")
+                fig_wr.add_hline(y=50, line_dash="dash", line_color="#ffffff66", annotation_text="50% seuil")
+                fig_wr.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                    font_color="#e2e8f0", title_font_color="#00ff88",
+                    xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f", range=[0,100]))
+                st.plotly_chart(fig_wr, use_container_width=True)
+
+            with bt_tab3:
+                df_sorted = df_bt.sort_values("week").copy()
+                df_sorted["cumul"] = df_sorted["pnl_pct"].cumsum()
+                df_sorted["index"] = range(len(df_sorted))
+                fig_cap = go.Figure()
+                fig_cap.add_trace(go.Scatter(
+                    x=df_sorted["index"], y=df_sorted["cumul"],
+                    mode="lines", name="PnL cumulé %",
+                    line=dict(color="#00ff88", width=2),
+                    fill="tozeroy", fillcolor="#00ff8815"
+                ))
+                fig_cap.add_hline(y=0, line_dash="dash", line_color="#ffffff44")
+                fig_cap.update_layout(title="Courbe de capital cumulée",
+                    paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                    font_color="#e2e8f0", title_font_color="#00ff88",
+                    xaxis=dict(gridcolor="#1e3a5f", title="Trade #"),
+                    yaxis=dict(gridcolor="#1e3a5f", title="PnL cumulé %"))
+                st.plotly_chart(fig_cap, use_container_width=True)
+
+            # Export
+            bt_excel = BytesIO()
+            with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
+                df_bt.to_excel(writer, index=False, sheet_name="Trades")
+            st.download_button("⬇️ Télécharger résultats backtest", data=bt_excel.getvalue(),
+                file_name=f"backtest_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+st.markdown("---")
 if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
 
     tickers_to_analyze = SP500_TICKERS
