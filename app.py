@@ -603,90 +603,110 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
             st.error("❌ Aucun trade simulé.")
         else:
             stats = backtest_summary(df_bt)
-            st.markdown("### 📈 Résultats")
+            total_trades = len(df_bt)
+            st.markdown(f"### 📈 Comparatif 6 Stratégies — {total_trades} trades simulés")
 
-            # Métriques
-            m1,m2,m3,m4,m5,m6 = st.columns(6)
-            wc  = "#00ff88" if stats["win_rate"]>=55 else "#fbbf24" if stats["win_rate"]>=45 else "#f87171"
-            pfc = "#00ff88" if stats["profit_factor"]>=1.5 else "#fbbf24" if stats["profit_factor"]>=1.0 else "#f87171"
-            exc = "#00ff88" if stats["expectancy"]>0 else "#f87171"
-            for col, val, label, clr in [
-                (m1, stats['total'],         "Trades", "#4a90d0"),
-                (m2, f"{stats['win_rate']}%","Win Rate", wc),
-                (m3, stats['profit_factor'], "Profit Factor", pfc),
-                (m4, f"{stats['expectancy']}%","Expectancy", exc),
-                (m5, f"+{stats['avg_win']}%","Gain moyen", "#00ff88"),
-                (m6, f"{stats['avg_loss']}%","Perte moyenne","#f87171"),
-            ]:
-                col.markdown(f"""<div class="metric-card">
-                    <div class="metric-value" style="color:{clr};font-size:1.3rem;">{val}</div>
-                    <div class="metric-label">{label}</div>
-                </div>""", unsafe_allow_html=True)
+            strat_labels = {
+                "A": "A — +5% fixe",
+                "B": "B — +7% fixe",
+                "C": "C — Vendredi",
+                "D": "D — Stop 3%",
+                "E": "E — Stop 5%",
+                "F": "F — 50%+Stop 3%",
+            }
 
-            st.markdown("")
-            s1,s2,s3,s4 = st.columns(4)
-            s1.metric("Meilleur trade",  f"+{stats['best_trade']}%")
-            s2.metric("Pire trade",      f"{stats['worst_trade']}%")
-            s3.metric("Pertes consécutives max", stats["max_consec_loss"])
-            s4.metric("PnL cumulé total", f"{stats['total_pnl']}%")
+            best_strat = max(stats.keys(), key=lambda s: stats[s].get("expectancy", -99))
 
-            # Stats par score et signaux
+            for strat, data in stats.items():
+                is_best = strat == best_strat
+                border  = "#ffd700" if is_best else "#1e3a5f"
+                bg      = "#1a130015" if is_best else "#0b142288"
+                wc  = "#00ff88" if data["win_rate"]>=55 else "#fbbf24" if data["win_rate"]>=45 else "#f87171"
+                exc = "#00ff88" if data["expectancy"]>0 else "#f87171"
+                pfc = "#00ff88" if data["profit_factor"]>=1.5 else "#fbbf24" if data["profit_factor"]>=1.0 else "#f87171"
+                crown = " 👑 MEILLEURE" if is_best else ""
+
+                st.markdown(
+                    f'<div style="background:{bg};border:2px solid {border};'
+                    f'border-radius:10px;padding:14px 18px;margin:8px 0;">',
+                    unsafe_allow_html=True
+                )
+                st.markdown(f"**{strat_labels[strat]}**{crown} &nbsp;|&nbsp; {data['total']} trades")
+                c1,c2,c3,c4,c5,c6 = st.columns(6)
+                c1.metric("Win Rate",      f"{data['win_rate']}%")
+                c2.metric("Expectancy",    f"{data['expectancy']}%")
+                c3.metric("Profit Factor", f"{data['profit_factor']}")
+                c4.metric("Gain moyen",    f"+{data['avg_win']}%")
+                c5.metric("Perte moyenne", f"{data['avg_loss']}%")
+                c6.metric("PnL Total",     f"{data['total_pnl']}%")
+                st.markdown("</div>", unsafe_allow_html=True)
+
             st.markdown("---")
-            sc1, sc2 = st.columns(2)
-            with sc1:
-                st.markdown("**📊 Par niveau de score**")
-                for label, data in stats["score_stats"].items():
-                    wr = data["win_rate"]
-                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
-                    st.markdown(f"{ic} **{label}** — Win: `{wr}%` | PnL moy: `{data['avg_pnl']}%` | N=`{data['n']}`")
-            with sc2:
-                st.markdown("**🎯 Par signaux convergents**")
-                for label, data in stats["signal_stats"].items():
-                    wr = data["win_rate"]
-                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
-                    st.markdown(f"{ic} **{label}** — Win: `{wr}%` | PnL moy: `{data['avg_pnl']}%` | N=`{data['n']}`")
+            selected_strat = st.selectbox(
+                "📊 Voir le détail d'une stratégie",
+                options=list(stats.keys()),
+                format_func=lambda s: f"Stratégie {strat_labels[s]}",
+                index=list(stats.keys()).index(best_strat)
+            )
 
-            # Graphiques
-            st.markdown("---")
-            import plotly.express as px
-            import plotly.graph_objects as go
+            sd = stats[selected_strat]
+            st.markdown(f"#### Détail — {strat_labels[selected_strat]}")
+            d1,d2,d3,d4 = st.columns(4)
+            d1.metric("Meilleur trade",          f"+{sd['best']}%")
+            d2.metric("Pire trade",              f"{sd['worst']}%")
+            d3.metric("Pertes consécutives max", sd["max_consec_loss"])
+            d4.metric("PnL cumulé",              f"{sd['total_pnl']}%")
 
-            bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Distribution PnL","Win Rate par score","Courbe de capital"])
+            st.markdown("**Performance par niveau de score IA :**")
+            score_items = list(sd["score_stats"].items())
+            if score_items:
+                sc_cols = st.columns(len(score_items))
+                for col, (slabel, sdata) in zip(sc_cols, score_items):
+                    wr = sdata["win_rate"]
+                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
+                    col.markdown(f"{ic} **Score {slabel}**\n\nWin: `{wr}%` | PnL: `{sdata['avg_pnl']}%` | N=`{sdata['n']}`")
+
+            pnl_col = f"pnl_{selected_strat}"
+            res_col = f"result_{selected_strat}"
+
+            bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Courbe capital","Distribution PnL","Win Rate/Score"])
 
             with bt_tab1:
-                # Histogramme natif Streamlit
-                wins_data  = df_bt[df_bt["result"]=="WIN"]["pnl_pct"]
-                loss_data  = df_bt[df_bt["result"]=="LOSS"]["pnl_pct"]
-                st.markdown("**Gains (WIN)**")
-                st.bar_chart(wins_data.value_counts(bins=15).sort_index())
-                st.markdown("**Pertes (LOSS)**")
-                st.bar_chart(loss_data.value_counts(bins=15).sort_index())
+                df_s2 = df_bt.sort_values("week").copy()
+                df_s2["PnL cumulé %"] = df_s2[pnl_col].cumsum()
+                st.line_chart(df_s2["PnL cumulé %"])
 
             with bt_tab2:
+                wins_d = df_bt[df_bt[res_col]=="WIN"][pnl_col]
+                loss_d = df_bt[df_bt[res_col]=="LOSS"][pnl_col]
+                if not wins_d.empty:
+                    st.markdown("**Gains**")
+                    st.bar_chart(wins_d.value_counts(bins=10).sort_index())
+                if not loss_d.empty:
+                    st.markdown("**Pertes**")
+                    st.bar_chart(loss_d.value_counts(bins=10).sort_index())
+
+            with bt_tab3:
                 df_bt["score_bucket"] = pd.cut(df_bt["score"],
                     bins=[0,40,50,60,70,80,101],
                     labels=["<40","40-50","50-60","60-70","70-80",">=80"])
-                wr_by_score = df_bt.groupby("score_bucket", observed=True).apply(
-                    lambda x: round(len(x[x["result"]=="WIN"])/len(x)*100, 1)
+                wr_s = df_bt.groupby("score_bucket", observed=True).apply(
+                    lambda x: round(len(x[x[res_col]=="WIN"])/len(x)*100, 1)
                 ).reset_index()
-                wr_by_score.columns = ["Score","Win Rate %"]
-                wr_by_score = wr_by_score.set_index("Score")
-                st.markdown("**Win Rate % par niveau de score** *(seuil rentable = 50%)*")
-                st.bar_chart(wr_by_score)
+                wr_s.columns = ["Score","Win Rate %"]
+                st.bar_chart(wr_s.set_index("Score"))
 
-            with bt_tab3:
-                df_sorted = df_bt.sort_values("week").copy()
-                df_sorted["PnL cumulé %"] = df_sorted["pnl_pct"].cumsum()
-                df_sorted = df_sorted.reset_index(drop=True)
-                st.markdown("**Courbe de capital — PnL cumulé %**")
-                st.line_chart(df_sorted["PnL cumulé %"])
-
-            # Export
             bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
                 df_bt.to_excel(writer, index=False, sheet_name="Trades")
-            st.download_button("⬇️ Télécharger résultats backtest", data=bt_excel.getvalue(),
-                file_name=f"backtest_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                rows = [{"Stratégie": strat_labels[s], "Win Rate %": d["win_rate"],
+                         "Expectancy %": d["expectancy"], "Profit Factor": d["profit_factor"],
+                         "Gain Moy %": d["avg_win"], "Perte Moy %": d["avg_loss"],
+                         "PnL Total %": d["total_pnl"], "Max Pertes Consec": d["max_consec_loss"]}
+                        for s, d in stats.items()]
+                pd.DataFrame(rows).to_excel(writer, index=False, sheet_name="Comparatif")
+            st.download_button("⬇️ Télécharger comparatif 6 stratégies", data=bt_excel.getvalue(),
+                file_name=f"backtest_6strat_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 st.markdown("---")
