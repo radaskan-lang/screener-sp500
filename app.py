@@ -10,9 +10,9 @@ import time
 # ─────────────────────────────────────
 @st.cache_data
 def get_sp500():
-    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    table = pd.read_html(url)[0]
-    tickers = table["Symbol"].tolist()
+    url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
+    df = pd.read_csv(url)
+    tickers = df["Symbol"].tolist()
     return [t.replace(".", "-") for t in tickers]
 
 # ─────────────────────────────────────
