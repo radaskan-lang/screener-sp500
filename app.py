@@ -14,8 +14,207 @@ from pre_filter import run_prefilter, PREFILTER_CONFIG
 from advanced_indicators import detect_advanced_signals
 from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
 from volume_signals import detect_volume_anomaly
-from backtest import run_backtest, backtest_summary
 from claude_scorer import claude_score_batch, verdict_color, conviction_badge
+
+# ─────────────────────────────────────────────
+# 📊 BACKTEST INLINE — 6 STRATÉGIES DE SORTIE
+# A: +5% fixe | B: +7% fixe | C: Vendredi
+# D: Stop suiveur 3% | E: Stop suiveur 5%
+# F: 50% à +5% + stop suiveur 3%
+# ─────────────────────────────────────────────
+
+STRATEGIES = {
+    "A": "A — Vente fixe +5%",
+    "B": "B — Vente fixe +7%",
+    "C": "C — Vente vendredi",
+    "D": "D — Stop suiveur 3%",
+    "E": "E — Stop suiveur 5%",
+    "F": "F — 50% à +5% + stop 3%",
+}
+
+def _simulate_strategy(strategy, opens, highs, lows, closes, entry, stop):
+    n = len(closes)
+    actual_entry = float(opens[0])
+    ratio        = actual_entry / entry if entry and entry > 0 else 1.0
+    actual_stop  = stop * ratio if stop else actual_entry * 0.97
+
+    def _pnl(exit_p): return round((exit_p - actual_entry) / actual_entry * 100, 2)
+    def _res(p): return "WIN" if p > 0.5 else "LOSS" if p < -0.5 else "BREAKEVEN"
+
+    if strategy == "A":
+        tgt = actual_entry * 1.05
+        for d in range(n):
+            if lows[d] <= actual_stop:  return _pnl(actual_stop), d, "LOSS"
+            if highs[d] >= tgt:         return _pnl(tgt), d, "WIN"
+        p = _pnl(closes[-1]); return p, n-1, _res(p)
+
+    elif strategy == "B":
+        tgt = actual_entry * 1.07
+        for d in range(n):
+            if lows[d] <= actual_stop:  return _pnl(actual_stop), d, "LOSS"
+            if highs[d] >= tgt:         return _pnl(tgt), d, "WIN"
+        p = _pnl(closes[-1]); return p, n-1, _res(p)
+
+    elif strategy == "C":
+        for d in range(n):
+            if lows[d] <= actual_stop:  return _pnl(actual_stop), d, "LOSS"
+        p = _pnl(closes[-1]); return p, n-1, _res(p)
+
+    elif strategy == "D":
+        trail = actual_stop; hi = actual_entry
+        for d in range(n):
+            if highs[d] > hi:
+                hi = highs[d]; trail = max(trail, hi * 0.97)
+            if lows[d] <= trail:
+                p = _pnl(trail); return p, d, _res(p)
+        p = _pnl(closes[-1]); return p, n-1, _res(p)
+
+    elif strategy == "E":
+        trail = actual_stop; hi = actual_entry
+        for d in range(n):
+            if highs[d] > hi:
+                hi = highs[d]; trail = max(trail, hi * 0.95)
+            if lows[d] <= trail:
+                p = _pnl(trail); return p, d, _res(p)
+        p = _pnl(closes[-1]); return p, n-1, _res(p)
+
+    elif strategy == "F":
+        tgt_half = actual_entry * 1.05
+        half_sold = False; trail = actual_stop; hi = actual_entry; total = 0.0
+        for d in range(n):
+            if half_sold and highs[d] > hi:
+                hi = highs[d]; trail = max(trail, hi * 0.97)
+            if not half_sold and highs[d] >= tgt_half:
+                total += _pnl(tgt_half) * 0.5
+                half_sold = True; hi = tgt_half; trail = max(trail, tgt_half * 0.97)
+            if lows[d] <= trail:
+                w = 0.5 if half_sold else 1.0
+                total += _pnl(trail) * w
+                return round(total, 2), d, _res(total)
+        w = 0.5 if half_sold else 1.0
+        total += _pnl(closes[-1]) * w
+        return round(total, 2), n-1, _res(total)
+
+    return 0.0, 0, "BREAKEVEN"
+
+
+def _backtest_ticker(ticker):
+    try:
+        hist = yf.Ticker(ticker).history(period="2y")
+        if hist is None or hist.empty or len(hist) < 100:
+            return []
+        trades = []
+        hist.index   = pd.to_datetime(hist.index)
+        hist["week"] = hist.index.to_period("W")
+        groups       = list(hist.groupby("week"))
+        for i in range(12, len(groups) - 1):
+            hw    = groups[i][1]
+            hdata = hist[hist.index <= hw.index[-1]]
+            nw    = groups[i+1][1]
+            if len(hdata) < 50 or nw.empty: continue
+            try:
+                close  = hdata["Close"]
+                volume = hdata["Volume"]
+                price  = float(close.iloc[-1])
+                ma50   = float(close.rolling(50).mean().iloc[-1])
+                ma200  = float(close.rolling(min(200,len(close))).mean().iloc[-1])
+                delta  = close.diff()
+                gain   = delta.where(delta>0,0).rolling(14).mean()
+                loss   = -delta.where(delta<0,0).rolling(14).mean()
+                rsi    = float(100-(100/(1+gain/loss.clip(lower=1e-10))).iloc[-1])
+                e12    = close.ewm(span=12,adjust=False).mean()
+                e26    = close.ewm(span=26,adjust=False).mean()
+                mh     = float((e12-e26-(e12-e26).ewm(span=9,adjust=False).mean()).iloc[-1])
+                vr     = float(volume.iloc[-1]/volume.rolling(20).mean().iloc[-1])
+                hi_s   = hdata["High"]; lo_s = hdata["Low"]
+                tr     = pd.concat([(hi_s-lo_s),(hi_s-close.shift(1)).abs(),(lo_s-close.shift(1)).abs()],axis=1).max(axis=1)
+                atr    = float(tr.rolling(14).mean().iloc[-1])
+
+                score = 0
+                if price>ma50>ma200: score+=35
+                elif price>ma200:    score+=15
+                if 45<=rsi<=65:      score+=25
+                elif 35<=rsi<45:     score+=18
+                elif 65<rsi<=72:     score+=15
+                else:                score+=5
+                if mh>0.3:           score+=20
+                elif mh>0:           score+=14
+                if vr>=2:            score+=20
+                elif vr>=1.5:        score+=15
+                elif vr>=1.1:        score+=10
+
+                n_sig = sum([price>ma50>ma200, 45<=rsi<=65 or 35<=rsi<45, mh>0, vr>=1.5])
+                entry = round(price*1.003, 2)
+                stop  = round(entry - atr*1.5, 2)
+
+                opens  = nw["Open"].values
+                highs  = nw["High"].values
+                lows   = nw["Low"].values
+                closes = nw["Close"].values
+
+                if len(opens) < 2: continue
+
+                row = {"ticker":ticker,"week":str(groups[i][0]),"score":int(score),"n_signals":int(n_sig),
+                       "rsi":round(rsi,1),"macd_hist":round(mh,3),"vol_ratio":round(vr,2),"entry":entry,"stop":stop}
+                for s in STRATEGIES:
+                    p, d, r = _simulate_strategy(s, opens, highs, lows, closes, entry, stop)
+                    row[f"pnl_{s}"] = float(p)
+                    row[f"result_{s}"] = str(r)
+                trades.append(row)
+            except Exception:
+                continue
+        return trades
+    except Exception:
+        return []
+
+
+def run_backtest(tickers, weeks=52, max_workers=8, progress_callback=None):
+    all_trades = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_backtest_ticker, t): t for t in tickers}
+        done = 0
+        for future in concurrent.futures.as_completed(futures):
+            done += 1
+            trades = future.result()
+            if trades: all_trades.extend(trades)
+            if progress_callback: progress_callback(done, len(tickers))
+    return pd.DataFrame(all_trades) if all_trades else pd.DataFrame()
+
+
+def backtest_summary(df):
+    if df.empty: return {}
+    summary = {}
+    for s, label in STRATEGIES.items():
+        pc = f"pnl_{s}"; rc = f"result_{s}"
+        if pc not in df.columns: continue
+        d    = df[[pc,rc,"score"]].dropna()
+        n    = len(d)
+        if n == 0: continue
+        wins = len(d[d[rc]=="WIN"]); losses = len(d[d[rc]=="LOSS"])
+        wr   = round(wins/n*100, 1)
+        aw   = round(float(d[d[rc]=="WIN"][pc].mean()), 2) if wins>0 else 0.0
+        al   = round(float(d[d[rc]=="LOSS"][pc].mean()), 2) if losses>0 else 0.0
+        tp   = round(float(d[pc].sum()), 1)
+        gp   = d[d[pc]>0][pc].sum(); gl = abs(d[d[pc]<0][pc].sum())
+        pf   = round(float(gp/gl), 2) if gl>0 else 9.9
+        exp  = round(float(wr/100*aw + (1-wr/100)*al), 2)
+        best = round(float(d[pc].max()), 2); worst = round(float(d[pc].min()), 2)
+        mc   = 0; cur = 0
+        for r in df.sort_values("week")[rc]:
+            cur = cur+1 if r=="LOSS" else 0
+            mc  = max(mc, cur)
+        sc_stats = {}
+        for sm,sx,sl in [(80,101,">=80"),(60,80,"60-79"),(0,60,"<60")]:
+            sub = d[(d["score"]>=sm)&(d["score"]<sx)]
+            if len(sub)>0:
+                sw = len(sub[sub[rc]=="WIN"])
+                sc_stats[sl] = {"n":int(len(sub)),"win_rate":round(sw/len(sub)*100,1),"avg_pnl":round(float(sub[pc].mean()),2)}
+        summary[s] = {"label":str(label),"total":int(n),"wins":int(wins),"losses":int(losses),
+                      "win_rate":float(wr),"avg_win":float(aw),"avg_loss":float(al),
+                      "total_pnl":float(tp),"best":float(best),"worst":float(worst),
+                      "profit_factor":float(pf),"expectancy":float(exp),
+                      "max_consec_loss":int(mc),"score_stats":sc_stats}
+    return summary
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
