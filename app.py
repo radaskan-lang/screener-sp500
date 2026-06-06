@@ -7,6 +7,7 @@ from io import BytesIO
 import time
 import concurrent.futures
 import anthropic
+from pattern_detection import detect_all_patterns, pattern_badge
 
 # ─────────────────────────────
 # 🎨 PAGE CONFIG
@@ -96,6 +97,17 @@ h1, h2, h3 {
     line-height: 1.6;
 }
 
+.pattern-box {
+    background: linear-gradient(135deg, #0f1f35 0%, #0a1628 100%);
+    border: 1px solid #fbbf2444;
+    border-left: 4px solid #fbbf24;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 6px 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
 .ticker-badge {
     display: inline-block;
     background: #00ff8822;
@@ -121,10 +133,6 @@ div[data-testid="stDataFrame"] {
 section[data-testid="stSidebar"] {
     background: #0d1117 !important;
     border-right: 1px solid #1e3a5f;
-}
-
-.stSelectbox > div, .stSlider > div {
-    color: #e2e8f0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -217,6 +225,7 @@ def fetch(ticker):
 
         close  = hist["Close"]
         volume = hist["Volume"]
+        high   = hist["High"]
 
         price = float(close.iloc[-1])
         ma50  = float(close.rolling(50).mean().iloc[-1])
@@ -226,6 +235,9 @@ def fetch(ticker):
         bb_bandwidth, bb_pct = calc_bollinger(close)
         vol_ratio, price_up  = calc_volume_signal(volume, close)
 
+        # ── Détection patterns swing ──
+        patterns_data = detect_all_patterns(hist)
+
         # Données fondamentales
         info = t.info
         pe_ratio   = info.get("trailingPE", None)
@@ -234,22 +246,26 @@ def fetch(ticker):
         sector     = info.get("sector", "N/A")
 
         return {
-            "Ticker":      ticker,
-            "Sector":      sector,
-            "Prix":        round(price, 2),
-            "MA50":        round(ma50, 2),
-            "MA200":       round(ma200, 2),
-            "RSI":         round(rsi, 1),
-            "MACD":        round(macd_line, 3),
-            "MACD_Signal": round(macd_signal, 3),
-            "MACD_Hist":   round(macd_hist, 3),
-            "BB_Width":    round(bb_bandwidth, 1),
-            "BB_Pct":      round(bb_pct, 2),
-            "Vol_Ratio":   round(vol_ratio, 2),
-            "Price_Up":    price_up,
-            "PE":          round(pe_ratio, 1) if pe_ratio else None,
-            "Rev_Growth":  round(revenue_gr * 100, 1) if revenue_gr else None,
-            "Net_Margin":  round(net_margin * 100, 1) if net_margin else None,
+            "Ticker":        ticker,
+            "Sector":        sector,
+            "Prix":          round(price, 2),
+            "MA50":          round(ma50, 2),
+            "MA200":         round(ma200, 2),
+            "RSI":           round(rsi, 1),
+            "MACD":          round(macd_line, 3),
+            "MACD_Signal":   round(macd_signal, 3),
+            "MACD_Hist":     round(macd_hist, 3),
+            "BB_Width":      round(bb_bandwidth, 1),
+            "BB_Pct":        round(bb_pct, 2),
+            "Vol_Ratio":     round(vol_ratio, 2),
+            "Price_Up":      price_up,
+            "PE":            round(pe_ratio, 1) if pe_ratio else None,
+            "Rev_Growth":    round(revenue_gr * 100, 1) if revenue_gr else None,
+            "Net_Margin":    round(net_margin * 100, 1) if net_margin else None,
+            "Top_Pattern":   patterns_data["top_pattern"],
+            "Patterns":      patterns_data["summary"],
+            "Pattern_Score": patterns_data["bonus_score"],
+            "Pattern_Badge": pattern_badge(patterns_data["bonus_score"]),
         }
     except Exception:
         return None
@@ -272,7 +288,7 @@ def fetch_parallel(tickers, max_workers=10):
     return results
 
 # ─────────────────────────────
-# 🧠 SCORE IA (RÈGLES ENRICHIES)
+# 🧠 SCORE IA
 # ─────────────────────────────
 def ai_score(row):
     score   = 0
@@ -361,6 +377,14 @@ def ai_score(row):
         reasons.append(f"Marge nette solide ({net_margin}%)")
     score += fund_pts
 
+    # — Bonus Patterns (max +40 pts) —
+    pattern_bonus = row.get("Pattern_Score", 0)
+    if pattern_bonus > 0:
+        score += pattern_bonus
+        top = row.get("Top_Pattern", "")
+        if top and top != "—":
+            reasons.append(f"Pattern: {top}")
+
     return min(score, 100), reasons
 
 def ai_signal(score):
@@ -374,18 +398,18 @@ def ai_signal(score):
         return "🔴 AVOID"
 
 # ─────────────────────────────
-# 🤖 ANALYSE CLAUDE (ANTHROPIC)
+# 🤖 ANALYSE CLAUDE
 # ─────────────────────────────
 def claude_analysis(row, api_key):
     try:
         client = anthropic.Anthropic(api_key=api_key)
 
-        pe_str  = f"{row['PE']}x"        if row['PE']         else "N/A"
-        rg_str  = f"{row['Rev_Growth']}%" if row['Rev_Growth'] else "N/A"
-        nm_str  = f"{row['Net_Margin']}%" if row['Net_Margin'] else "N/A"
+        pe_str = f"{row['PE']}x"         if row['PE']         else "N/A"
+        rg_str = f"{row['Rev_Growth']}%" if row['Rev_Growth'] else "N/A"
+        nm_str = f"{row['Net_Margin']}%" if row['Net_Margin'] else "N/A"
 
-        prompt = f"""Tu es un analyste financier senior spécialisé en actions américaines.
-Analyse ce titre et donne un avis concis (5-7 lignes max) en français.
+        prompt = f"""Tu es un analyste financier senior spécialisé en swing trading (5-7 jours).
+Analyse ce titre et donne un avis concis (6-8 lignes max) en français.
 
 Ticker: {row['Ticker']} | Secteur: {row['Sector']}
 Prix: ${row['Prix']} | MA50: ${row['MA50']} | MA200: ${row['MA200']}
@@ -393,13 +417,18 @@ RSI: {row['RSI']} | MACD Hist: {row['MACD_Hist']} | BB%: {row['BB_Pct']}
 Volume ratio: {row['Vol_Ratio']}x | PE: {pe_str}
 Croissance revenus: {rg_str} | Marge nette: {nm_str}
 Score IA: {row['AI Score']}/100 | Signal: {row['AI Signal']}
+Pattern détecté: {row['Top_Pattern']} | Score pattern: {row['Pattern_Score']}/40
 
-Donne: 1) Ton verdict (ACHETER/ATTENDRE/ÉVITER) 2) Le principal argument pour 3) Le principal risque.
-Sois direct et précis. Pas de disclaimer."""
+Donne:
+1) Verdict ACHETER / ATTENDRE / ÉVITER
+2) Argument principal pour le swing
+3) Point d'entrée et stop-loss suggérés
+4) Risque principal cette semaine
+Sois direct, chiffré, sans disclaimer."""
 
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=300,
+            max_tokens=350,
             messages=[{"role": "user", "content": prompt}]
         )
         return message.content[0].text
@@ -416,7 +445,7 @@ def to_excel(df):
     return output.getvalue()
 
 # ─────────────────────────────
-# 🚀 APP — SIDEBAR
+# 🚀 SIDEBAR
 # ─────────────────────────────
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
@@ -433,24 +462,28 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🔍 Filtres")
-    min_score   = st.slider("Score IA minimum", 0, 100, 50)
+    min_score = st.slider("Score IA minimum", 0, 100, 50)
     signal_filter = st.multiselect(
         "Signaux à afficher",
         ["🟢 STRONG BUY", "🟢 BUY", "🟡 HOLD", "🔴 AVOID"],
         default=["🟢 STRONG BUY", "🟢 BUY"]
     )
+    only_patterns = st.checkbox("🔍 Avec patterns seulement", value=False)
 
     st.markdown("---")
-    st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro<br>Données via Yahoo Finance</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro<br>Données via Yahoo Finance</div>",
+                unsafe_allow_html=True)
 
 # ─────────────────────────────
-# 🚀 APP — MAIN
+# 🚀 MAIN
 # ─────────────────────────────
 st.markdown("# 📊 S&P 500 IA Screener Pro")
-st.markdown("<div style='color:#64748b;margin-bottom:2rem;'>Analyse technique & fondamentale propulsée par IA</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#64748b;margin-bottom:2rem;'>Analyse technique · Patterns swing · Propulsé par Claude IA</div>",
+            unsafe_allow_html=True)
 
 tickers = SP500_TICKERS[:100] if mode_rapide else SP500_TICKERS
-st.markdown(f"<div style='color:#00ff88;margin-bottom:1rem;'>✅ <b>{len(tickers)}</b> actions prêtes à analyser</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='color:#00ff88;margin-bottom:1rem;'>✅ <b>{len(tickers)}</b> actions prêtes à analyser</div>",
+            unsafe_allow_html=True)
 
 if st.button("🔄 Lancer l'analyse complète"):
 
@@ -470,26 +503,29 @@ if st.button("🔄 Lancer l'analyse complète"):
     df["AI Reasons"] = scores_data.apply(lambda x: " | ".join(x[1]))
     df = df.sort_values("AI Score", ascending=False).reset_index(drop=True)
 
-    # Filtres sidebar
+    # Filtres
     df_filtered = df[df["AI Score"] >= min_score]
     if signal_filter:
         df_filtered = df_filtered[df_filtered["AI Signal"].isin(signal_filter)]
+    if only_patterns:
+        df_filtered = df_filtered[df_filtered["Pattern_Score"] > 0]
 
-    # ── MÉTRIQUES GLOBALES ──
+    # ── MÉTRIQUES ──
     st.markdown("---")
     st.markdown("### 📈 Vue d'ensemble")
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    total      = len(df)
-    strong_buy = len(df[df["AI Signal"] == "🟢 STRONG BUY"])
-    buy        = len(df[df["AI Signal"] == "🟢 BUY"])
-    hold       = len(df[df["AI Signal"] == "🟡 HOLD"])
-    avoid      = len(df[df["AI Signal"] == "🔴 AVOID"])
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    total        = len(df)
+    strong_buy   = len(df[df["AI Signal"] == "🟢 STRONG BUY"])
+    buy          = len(df[df["AI Signal"] == "🟢 BUY"])
+    hold         = len(df[df["AI Signal"] == "🟡 HOLD"])
+    avoid        = len(df[df["AI Signal"] == "🔴 AVOID"])
+    avec_pattern = len(df[df["Pattern_Score"] > 0])
 
     for col, val, label in zip(
-        [col1, col2, col3, col4, col5],
-        [total, strong_buy, buy, hold, avoid],
-        ["Total analysés", "Strong Buy", "Buy", "Hold", "Avoid"]
+        [col1, col2, col3, col4, col5, col6],
+        [total, strong_buy, buy, hold, avoid, avec_pattern],
+        ["Total", "Strong Buy", "Buy", "Hold", "Avoid", "Avec Pattern"]
     ):
         col.markdown(f"""
         <div class="metric-card">
@@ -497,62 +533,86 @@ if st.button("🔄 Lancer l'analyse complète"):
             <div class="metric-label">{label}</div>
         </div>""", unsafe_allow_html=True)
 
+    # ── PATTERNS DÉTECTÉS ──
+    st.markdown("---")
+    st.markdown("### 🔍 Top Patterns Swing Détectés")
+
+    top_patterns = df[df["Pattern_Score"] > 0].sort_values("Pattern_Score", ascending=False).head(10)
+    if not top_patterns.empty:
+        for _, row in top_patterns.iterrows():
+            st.markdown(f"""
+            <div class="pattern-box">
+                <span class="ticker-badge">{row['Ticker']}</span>
+                <strong style="color:#fbbf24">{row['Pattern_Badge']}</strong>
+                &nbsp;|&nbsp; Score pattern: <strong>+{row['Pattern_Score']} pts</strong>
+                &nbsp;|&nbsp; Score total: <strong>{row['AI Score']}/100</strong><br>
+                <span style="color:#94a3b8;font-size:0.8rem;">{row['Patterns']}</span>
+            </div>""", unsafe_allow_html=True)
+    else:
+        st.info("Aucun pattern détecté sur les actions filtrées.")
+
     # ── GRAPHIQUES ──
     st.markdown("---")
     st.markdown("### 📊 Visualisations")
 
-    tab1, tab2, tab3 = st.tabs(["Distribution des scores", "RSI vs Score", "Top 10 Prix"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Distribution scores", "RSI vs Score", "Top 10", "Patterns"])
 
     with tab1:
         import plotly.express as px
-        fig = px.histogram(
-            df, x="AI Score", nbins=20,
-            color_discrete_sequence=["#00ff88"],
-            title="Distribution des scores IA"
-        )
-        fig.update_layout(
-            paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-            font_color="#e2e8f0", title_font_color="#00ff88",
-            xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f")
-        )
+        fig = px.histogram(df, x="AI Score", nbins=20,
+                           color_discrete_sequence=["#00ff88"],
+                           title="Distribution des scores IA")
+        fig.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                          font_color="#e2e8f0", title_font_color="#00ff88",
+                          xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
         st.plotly_chart(fig, use_container_width=True)
 
     with tab2:
-        fig2 = px.scatter(
-            df, x="RSI", y="AI Score", color="AI Signal", hover_data=["Ticker","Sector"],
-            color_discrete_map={
-                "🟢 STRONG BUY": "#00ff88", "🟢 BUY": "#4ade80",
-                "🟡 HOLD": "#fbbf24", "🔴 AVOID": "#f87171"
-            },
-            title="RSI vs Score IA"
-        )
-        fig2.update_layout(
-            paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-            font_color="#e2e8f0", title_font_color="#00ff88",
-            xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f")
-        )
+        fig2 = px.scatter(df, x="RSI", y="AI Score", color="AI Signal",
+                          hover_data=["Ticker", "Sector", "Top_Pattern"],
+                          color_discrete_map={
+                              "🟢 STRONG BUY": "#00ff88", "🟢 BUY": "#4ade80",
+                              "🟡 HOLD": "#fbbf24", "🔴 AVOID": "#f87171"
+                          }, title="RSI vs Score IA")
+        fig2.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                           font_color="#e2e8f0", title_font_color="#00ff88",
+                           xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
         st.plotly_chart(fig2, use_container_width=True)
 
     with tab3:
         top10 = df.head(10)
-        fig3  = px.bar(
-            top10, x="Ticker", y="AI Score", color="AI Score",
-            color_continuous_scale=["#1e3a5f", "#00ff88"],
-            title="Top 10 — Score IA"
-        )
-        fig3.update_layout(
-            paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
-            font_color="#e2e8f0", title_font_color="#00ff88",
-            xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f")
-        )
+        fig3 = px.bar(top10, x="Ticker", y="AI Score", color="AI Score",
+                      color_continuous_scale=["#1e3a5f", "#00ff88"],
+                      title="Top 10 — Score IA")
+        fig3.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                           font_color="#e2e8f0", title_font_color="#00ff88",
+                           xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
         st.plotly_chart(fig3, use_container_width=True)
 
-    # ── TABLEAU PRINCIPAL ──
+    with tab4:
+        df_pat = df[df["Pattern_Score"] > 0].sort_values("Pattern_Score", ascending=False).head(15)
+        if not df_pat.empty:
+            fig4 = px.bar(df_pat, x="Ticker", y="Pattern_Score", color="Pattern_Score",
+                          color_continuous_scale=["#1e3a5f", "#fbbf24"],
+                          hover_data=["Top_Pattern", "AI Score"],
+                          title="Top Patterns — Score bonus")
+            fig4.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
+                               font_color="#e2e8f0", title_font_color="#00ff88",
+                               xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
+            st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.info("Aucun pattern à afficher.")
+
+    # ── TABLEAU ──
     st.markdown("---")
     st.markdown(f"### 🏆 Résultats ({len(df_filtered)} actions)")
 
-    cols_display = ["Ticker","Sector","Prix","MA50","MA200","RSI","MACD_Hist",
-                    "Vol_Ratio","PE","Rev_Growth","Net_Margin","AI Score","AI Signal","AI Reasons"]
+    cols_display = [
+        "Ticker", "Sector", "Prix", "MA50", "MA200", "RSI", "MACD_Hist",
+        "Vol_Ratio", "PE", "Rev_Growth", "Net_Margin",
+        "Pattern_Badge", "Top_Pattern", "Pattern_Score",
+        "AI Score", "AI Signal", "AI Reasons"
+    ]
     cols_display = [c for c in cols_display if c in df_filtered.columns]
     st.dataframe(df_filtered[cols_display], use_container_width=True, height=400)
 
@@ -560,7 +620,8 @@ if st.button("🔄 Lancer l'analyse complète"):
     if use_claude and api_key:
         st.markdown("---")
         st.markdown("### 🤖 Analyse Claude IA — Top 5")
-        st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Analyse approfondie par Claude pour les 5 meilleures opportunités</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:#64748b;font-size:0.85rem;margin-bottom:1rem;'>Analyse swing trading par Claude pour les 5 meilleures opportunités</div>",
+                    unsafe_allow_html=True)
 
         top5 = df_filtered.head(5)
         for _, row in top5.iterrows():
@@ -569,15 +630,17 @@ if st.button("🔄 Lancer l'analyse complète"):
             st.markdown(f"""
             <div class="ai-analysis-box">
                 <span class="ticker-badge">{row['Ticker']}</span>
-                <strong style="color:#00ff88">{row['AI Signal']}</strong> — Score {row['AI Score']}/100
+                <strong style="color:#00ff88">{row['AI Signal']}</strong>
+                — Score {row['AI Score']}/100
+                &nbsp;|&nbsp; <span style="color:#fbbf24">{row['Pattern_Badge']}</span>
                 <br><br>{analysis}
             </div>""", unsafe_allow_html=True)
             time.sleep(0.5)
 
     elif use_claude and not api_key:
-        st.warning("⚠️ Entrez votre clé API Anthropic dans la barre latérale pour activer l'analyse Claude.")
+        st.warning("⚠️ Entrez votre clé API Anthropic dans la barre latérale.")
 
-    # ── EXPORT EXCEL ──
+    # ── EXPORT ──
     st.markdown("---")
     st.markdown("### 📥 Export")
     excel = to_excel(df_filtered[cols_display])
