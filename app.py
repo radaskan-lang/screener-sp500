@@ -17,6 +17,7 @@ from volume_signals import detect_volume_anomaly
 from claude_scorer import claude_score_batch, verdict_color, conviction_badge
 from earnings_sector import check_earnings, get_sector_strength, sector_bonus_score
 from gap_detector import detect_gaps
+from relative_strength import calc_relative_strength, get_spy_data
 
 # ─────────────────────────────────────────────
 # 📊 BACKTEST INLINE — 6 STRATÉGIES DE SORTIE
@@ -399,6 +400,8 @@ def fetch(ticker):
         earn     = check_earnings(ticker)
         # Gaps
         gap_data = detect_gaps(hist)
+        # Relative Strength vs SPY
+        rs_data  = calc_relative_strength(hist)
 
         info       = t.info
         revenue_gr = info.get("revenueGrowth", None)
@@ -470,6 +473,18 @@ def fetch(ticker):
             "Gap_Direction":   gap_data["gap_direction"],
             "Gap_Support":     gap_data["nearest_support"],
             "Gap_Summary":     gap_data["summary"],
+            # Relative Strength vs SPY
+            "RS_Score":        rs_data["rs_score"],
+            "RS_Badge":        rs_data["badge"],
+            "RS_Signal":       rs_data["signal"],
+            "RS_Trend":        rs_data["rs_trend"],
+            "RS_5d":           rs_data["rs_5d"],
+            "RS_10d":          rs_data["rs_10d"],
+            "RS_20d":          rs_data["rs_20d"],
+            "RS_Bonus":        rs_data["bonus_pts"],
+            "RS_Perf5d":       rs_data["perf_5d"],
+            "SPY_Perf5d":      rs_data["spy_perf_5d"],
+            "RS_Outperform":   rs_data["outperform"],
         }
     except Exception:
         return None
@@ -570,6 +585,18 @@ def ai_score(row):
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
+
+    # Bonus Relative Strength vs SPY (max +15, min -8)
+    try:
+        rs_bonus  = int(row.get("RS_Bonus", 0) or 0)
+        rs_signal = str(row.get("RS_Signal") or "")
+        rs_trend  = str(row.get("RS_Trend", "") or "")
+        if rs_bonus != 0:
+            score += rs_bonus
+            if rs_signal and rs_signal not in ["None","—","~","~ RS neutre vs SPY",""]:
+                reasons.append(rs_signal[:50])
     except Exception:
         pass
 
@@ -1096,6 +1123,11 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
 
     # PASSE 2 : ANALYSE COMPLÈTE
     st.markdown(f"### 🔬 Passe 2 — Analyse complète ({len(tickers_to_analyze)} actions)")
+
+    # Charger SPY une seule fois pour la Relative Strength
+    with st.spinner("Chargement données SPY pour Relative Strength..."):
+        spy_close = get_spy_data()
+
     rows = fetch_parallel(tickers_to_analyze, max_workers=nb_workers)
 
     if not rows:
@@ -1292,6 +1324,21 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                 except Exception:
                     pass
 
+            # Relative Strength
+            rs_badge    = str(row.get("RS_Badge", "") or "")
+            rs_trend_v  = str(row.get("RS_Trend", "") or "")
+            rs_perf     = row.get("RS_Perf5d", None)
+            spy_perf    = row.get("SPY_Perf5d", None)
+            rs_5d_v     = row.get("RS_5d", None)
+            if rs_badge and rs_badge not in ["—", ""]:
+                rs_color = "#00ff88" if row.get("RS_Outperform") else "#f87171"
+                rs_text  = f"**💪 RS :** {rs_badge}"
+                if rs_perf is not None and spy_perf is not None:
+                    diff = round(float(rs_perf) - float(spy_perf), 2)
+                    sign = "+" if diff >= 0 else ""
+                    rs_text += f" &nbsp;|&nbsp; Action: `{'+' if float(rs_perf)>=0 else ''}{rs_perf}%` vs SPY: `{'+' if float(spy_perf)>=0 else ''}{spy_perf}%` → <span style='color:{rs_color};'>{sign}{diff}% vs marché</span>"
+                st.markdown(rs_text, unsafe_allow_html=True)
+
             # Gap signal
             gap_badge   = str(row.get("Gap_Badge", "") or "")
             gap_signal  = str(row.get("Gap_Signal", "") or "")
@@ -1381,9 +1428,10 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     sig_col = "AI Signal Ajuste"
     vol_anormal  = len(df[df["VOL_Score"] >= 15]) if "VOL_Score" in df.columns else 0
     gaps_forts   = len(df[df["Gap_Score"] >= 12]) if "Gap_Score" in df.columns else 0
-    col1,col2,col3,col4,col5,col6,col7,col8,col9 = st.columns(9)
+    rs_forts     = len(df[df["RS_Score"] >= 65]) if "RS_Score" in df.columns else 0
+    col1,col2,col3,col4,col5,col6,col7,col8,col9,col10 = st.columns(10)
     for col, val, label in zip(
-        [col1,col2,col3,col4,col5,col6,col7,col8,col9],
+        [col1,col2,col3,col4,col5,col6,col7,col8,col9,col10],
         [
             len(df),
             len(df[df[sig_col]=="🟢 STRONG BUY"]),
@@ -1394,8 +1442,9 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             len(df[df.get("Conv_N", pd.Series([0]*len(df))) >= 4]) if "Conv_N" in df.columns else 0,
             vol_anormal,
             gaps_forts,
+            rs_forts,
         ],
-        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv≥4","Vol Anormal","Gaps Forts"]
+        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv≥4","Vol","Gaps","RS Fort"]
     ):
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value">{val}</div>
@@ -1473,9 +1522,10 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     cols_display = [
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
+        "RS_Badge","RS_Trend","RS_5d","RS_10d","RS_20d","RS_Perf5d","SPY_Perf5d",
         "Earnings_Badge","Earnings_Date","Earnings_Risk",
-        "Gap_Badge","Gap_Signal","Gap_Score","Gap_Pct","Gap_Support",
-        "VOL_Badge","VOL_Signal","VOL_Ratio","VOL_52W_Rank",
+        "Gap_Badge","Gap_Signal","Gap_Score","Gap_Support",
+        "VOL_Badge","VOL_Signal","VOL_Ratio",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
         "Pattern_Badge","Top_Pattern","Pattern_Score",
