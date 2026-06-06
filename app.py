@@ -656,52 +656,81 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 index=0
             )
 
-            sd = stats[selected_strat]
-            st.markdown(f"#### Détail — {strat_labels.get(selected_strat, selected_strat)}")
-            d1,d2,d3,d4 = st.columns(4)
-            d1.metric("Meilleur trade",          f"+{sd.get('best', 0)}%")
-            d2.metric("Pire trade",              f"{sd.get('worst', 0)}%")
-            d3.metric("Pertes consécutives max", sd.get("max_consec_loss", 0))
-            d4.metric("PnL cumulé",              f"{sd.get('total_pnl', 0)}%")
+            # Sécuriser l'accès — selected_strat doit être une clé valide
+            if selected_strat not in stats:
+                selected_strat = list(stats.keys())[0]
 
-            st.markdown("**Performance par niveau de score IA :**")
-            score_items = list((sd.get("score_stats") or {}).items())
-            if score_items:
-                sc_cols = st.columns(min(len(score_items), 3))
-                for col, (slabel, sdata) in zip(sc_cols, score_items):
-                    wr = float(sdata.get("win_rate", 0) or 0)
-                    ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
-                    col.markdown(f"{ic} **Score {slabel}**\n\nWin: `{wr}%` | PnL: `{sdata.get('avg_pnl',0)}%` | N=`{sdata.get('n',0)}`")
+            sd = stats[selected_strat]
+
+            st.markdown(f"#### Détail — {strat_labels.get(selected_strat, selected_strat)}")
+
+            # Métriques détail — tout en string pour éviter les erreurs de type
+            try:
+                d1,d2,d3,d4 = st.columns(4)
+                d1.metric("Meilleur trade",          f"+{sd.get('best', 0)}%")
+                d2.metric("Pire trade",              f"{sd.get('worst', 0)}%")
+                d3.metric("Pertes consec. max",      str(sd.get("max_consec_loss", 0)))
+                d4.metric("PnL cumulé",              f"{sd.get('total_pnl', 0)}%")
+            except Exception:
+                st.write(sd)
+
+            # Score stats
+            try:
+                score_stats = sd.get("score_stats") or {}
+                if score_stats:
+                    st.markdown("**Performance par niveau de score IA :**")
+                    rows_ss = []
+                    for slabel, sdata in score_stats.items():
+                        rows_ss.append({
+                            "Score":    str(slabel),
+                            "Win Rate": str(sdata.get("win_rate", 0)) + "%",
+                            "PnL moy":  str(sdata.get("avg_pnl", 0)) + "%",
+                            "N trades": str(sdata.get("n", 0)),
+                        })
+                    st.dataframe(pd.DataFrame(rows_ss).set_index("Score"), use_container_width=True)
+            except Exception:
+                pass
 
             pnl_col = f"pnl_{selected_strat}"
             res_col = f"result_{selected_strat}"
 
-            bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Courbe capital","Distribution PnL","Win Rate/Score"])
+            if pnl_col in df_bt.columns and res_col in df_bt.columns:
+                bt_tab1, bt_tab2, bt_tab3 = st.tabs(["Courbe capital","Distribution PnL","Win Rate/Score"])
 
-            with bt_tab1:
-                df_s2 = df_bt.sort_values("week").copy()
-                df_s2["PnL cumulé %"] = df_s2[pnl_col].cumsum()
-                st.line_chart(df_s2["PnL cumulé %"])
+                with bt_tab1:
+                    try:
+                        df_s2 = df_bt.sort_values("week").copy()
+                        df_s2["PnL cumule"] = df_s2[pnl_col].fillna(0).cumsum()
+                        st.line_chart(df_s2["PnL cumule"])
+                    except Exception as e:
+                        st.error(f"Graphique indisponible: {e}")
 
-            with bt_tab2:
-                wins_d = df_bt[df_bt[res_col]=="WIN"][pnl_col]
-                loss_d = df_bt[df_bt[res_col]=="LOSS"][pnl_col]
-                if not wins_d.empty:
-                    st.markdown("**Gains**")
-                    st.bar_chart(wins_d.value_counts(bins=10).sort_index())
-                if not loss_d.empty:
-                    st.markdown("**Pertes**")
-                    st.bar_chart(loss_d.value_counts(bins=10).sort_index())
+                with bt_tab2:
+                    try:
+                        wins_d = df_bt[df_bt[res_col]=="WIN"][pnl_col].dropna()
+                        loss_d = df_bt[df_bt[res_col]=="LOSS"][pnl_col].dropna()
+                        if not wins_d.empty:
+                            st.markdown("**Gains**")
+                            st.bar_chart(wins_d.value_counts(bins=10).sort_index())
+                        if not loss_d.empty:
+                            st.markdown("**Pertes**")
+                            st.bar_chart(loss_d.value_counts(bins=10).sort_index())
+                    except Exception as e:
+                        st.error(f"Graphique indisponible: {e}")
 
-            with bt_tab3:
-                df_bt["score_bucket"] = pd.cut(df_bt["score"],
-                    bins=[0,40,50,60,70,80,101],
-                    labels=["<40","40-50","50-60","60-70","70-80",">=80"])
-                wr_s = df_bt.groupby("score_bucket", observed=True).apply(
-                    lambda x: round(len(x[x[res_col]=="WIN"])/len(x)*100, 1)
-                ).reset_index()
-                wr_s.columns = ["Score","Win Rate %"]
-                st.bar_chart(wr_s.set_index("Score"))
+                with bt_tab3:
+                    try:
+                        df_bt2 = df_bt.copy()
+                        df_bt2["score_bucket"] = pd.cut(df_bt2["score"],
+                            bins=[0,40,50,60,70,80,101],
+                            labels=["<40","40-50","50-60","60-70","70-80",">=80"])
+                        wr_s = df_bt2.groupby("score_bucket", observed=True).apply(
+                            lambda x: round(len(x[x[res_col]=="WIN"])/max(len(x),1)*100, 1)
+                        ).reset_index()
+                        wr_s.columns = ["Score","Win Rate %"]
+                        st.bar_chart(wr_s.set_index("Score"))
+                    except Exception as e:
+                        st.error(f"Graphique indisponible: {e}")
 
             bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
