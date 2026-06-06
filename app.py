@@ -15,6 +15,7 @@ from advanced_indicators import detect_advanced_signals
 from convergence import calc_convergence, build_trade_report, get_day_of_week_advice
 from volume_signals import detect_volume_anomaly
 from claude_scorer import claude_score_batch, verdict_color, conviction_badge
+from earnings_sector import check_earnings, get_sector_strength, sector_bonus_score
 
 # ─────────────────────────────────────────────
 # 📊 BACKTEST INLINE — 6 STRATÉGIES DE SORTIE
@@ -393,6 +394,9 @@ def fetch(ticker):
         adv           = detect_advanced_signals(hist)
         vol_anom      = detect_volume_anomaly(hist)
 
+        # Earnings
+        earn          = check_earnings(ticker)
+
         info       = t.info
         revenue_gr = info.get("revenueGrowth", None)
         sector     = info.get("sector", "N/A")
@@ -449,6 +453,12 @@ def fetch(ticker):
             "VOL_52W_Rank":  vol_anom["vol_52w_rank"],
             "VOL_Bullish":   vol_anom["is_bullish"],
             "VOL_Summary":   vol_anom["summary"],
+            # Earnings
+            "Earnings_Badge":  earn["badge"],
+            "Earnings_Date":   earn["earnings_date"],
+            "Earnings_Days":   earn["days_until"],
+            "Earnings_Risk":   earn["risk_level"],
+            "Earnings_Avoid":  earn["should_avoid"],
         }
     except Exception:
         return None
@@ -549,6 +559,33 @@ def ai_score(row):
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
+
+    # Pénalité Earnings — risque élevé cette semaine
+    try:
+        earn_avoid = bool(row.get("Earnings_Avoid", False))
+        earn_risk  = str(row.get("Earnings_Risk", "") or "")
+        earn_days  = row.get("Earnings_Days", None)
+        if earn_avoid and earn_risk == "ÉLEVÉ":
+            score -= 25
+            reasons.append(f"🔴 Earnings dans {earn_days}j — risque élevé")
+        elif earn_avoid and earn_risk == "MODÉRÉ":
+            score -= 15
+            reasons.append(f"⚠️ Earnings dans {earn_days}j — prudence")
+    except Exception:
+        pass
+
+    # Bonus secteur fort
+    try:
+        sec_bonus, sec_label = sector_bonus_score(
+            str(row.get("Sector", "") or ""),
+            st.session_state.get("sector_data", {})
+        )
+        if sec_bonus != 0:
+            score += sec_bonus
+            if sec_label and sec_label != "—":
+                reasons.append(sec_label)
     except Exception:
         pass
 
@@ -719,6 +756,14 @@ with st.sidebar:
         ["🟢 STRONG BUY","🟢 BUY","🟡 HOLD","🔴 AVOID","🟡 HOLD ⚠️"],
         default=["🟢 STRONG BUY","🟢 BUY"]
     )
+    filter_earnings = st.checkbox(
+        "📅 Exclure earnings cette semaine", value=True,
+        help="Exclut les actions avec earnings dans les 5 prochains jours"
+    )
+    filter_top_sectors = st.checkbox(
+        "💪 Top 5 secteurs seulement", value=False,
+        help="Garde seulement les actions dans les 5 secteurs les plus forts"
+    )
 
     st.markdown("---")
     st.markdown("<div style='color:#64748b;font-size:0.75rem;'>S&P 500 IA Screener Pro</div>", unsafe_allow_html=True)
@@ -765,6 +810,29 @@ with st.expander("💡 Conseils de trading"):
             <div class="metric-value" style="color:{clr}">{val}</div>
             <div class="metric-label">{label}</div>
         </div>""", unsafe_allow_html=True)
+
+# ── FORCE SECTORIELLE ──
+with st.spinner("Analyse sectorielle..."):
+    sector_data = get_sector_strength()
+
+# Stocker en session state pour ai_score
+st.session_state["sector_data"] = sector_data
+
+if sector_data["rankings"]:
+    with st.expander("💪 Force Sectorielle cette semaine", expanded=False):
+        st.markdown(f"**🔥 Secteur dominant : {sector_data['top_sector']}** &nbsp;|&nbsp; 🔴 Secteur faible : {sector_data['worst_sector']}")
+        rows_sec = []
+        for sector, data in sector_data["rankings"]:
+            badge = sector_data["sector_badges"].get(sector, "")
+            rows_sec.append({
+                "Secteur":    sector,
+                "Badge":      badge,
+                "Mom 5j":     f"{'+' if data['mom_5d']>=0 else ''}{data['mom_5d']}%",
+                "Mom 20j":    f"{'+' if data['mom_20d']>=0 else ''}{data['mom_20d']}%",
+                "vs MA20":    "✅" if data['above_ma20'] else "❌",
+                "Force":      str(data['strength']),
+            })
+        st.dataframe(pd.DataFrame(rows_sec).set_index("Secteur"), use_container_width=True)
 
 # ─────────────────────────────────────────
 # 📊 SECTION BACKTEST
@@ -1198,6 +1266,16 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                 except Exception:
                     pass
 
+            # Earnings warning
+            earn_badge = str(row.get("Earnings_Badge", "") or "")
+            earn_risk  = str(row.get("Earnings_Risk", "") or "")
+            if earn_badge and earn_badge not in ["✅ Pas d'earnings","—",""]:
+                earn_color = "#f87171" if earn_risk == "ÉLEVÉ" else "#fbbf24" if earn_risk == "MODÉRÉ" else "#86efac"
+                st.markdown(
+                    f"<span style='color:{earn_color};font-weight:700;font-size:0.9rem;'>{earn_badge}</span>",
+                    unsafe_allow_html=True
+                )
+
             # R/R + détails
             st.markdown(
                 f"📊 **R/R:** `{rr_str}:1` &nbsp;|&nbsp; "
@@ -1341,10 +1419,19 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     df_filtered = df[df[ai_col] >= min_score]
     if signal_filter:
         df_filtered = df_filtered[df_filtered[sig_col].isin(signal_filter)]
+
+    # Filtre earnings
+    if filter_earnings and "Earnings_Avoid" in df_filtered.columns:
+        df_before = len(df_filtered)
+        df_filtered = df_filtered[df_filtered["Earnings_Avoid"] != True]
+        n_removed = df_before - len(df_filtered)
+        if n_removed > 0:
+            st.info(f"📅 {n_removed} action(s) exclues pour cause d'earnings cette semaine.")
     st.markdown(f"### 📋 Tableau complet ({len(df_filtered)} actions)")
     cols_display = [
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
+        "Earnings_Badge","Earnings_Date","Earnings_Risk",
         "VOL_Badge","VOL_Signal","VOL_Ratio","VOL_52W_Rank",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
