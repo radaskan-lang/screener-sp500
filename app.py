@@ -590,13 +590,10 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 fig_pnl = px.histogram(df_bt, x="pnl_pct", nbins=40, color="result",
                     color_discrete_map={"WIN":"#00ff88","LOSS":"#f87171","BREAKEVEN":"#fbbf24"},
                     title="Distribution des PnL")
-                # Ligne à zéro via shape (compatible toutes versions Plotly)
-                fig_pnl.add_shape(type="line", x0=0, x1=0,
-                    y0=0, y1=1, yref="paper",
-                    line=dict(color="#ffffff66", dash="dash", width=1))
                 fig_pnl.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
-                    xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
+                    xaxis=dict(gridcolor="#1e3a5f", zeroline=True, zerolinecolor="#ffffff44"),
+                    yaxis=dict(gridcolor="#1e3a5f"))
                 st.plotly_chart(fig_pnl, use_container_width=True)
 
             with bt_tab2:
@@ -609,14 +606,11 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 wr_by_score.columns = ["Score","Win Rate %"]
                 fig_wr = px.bar(wr_by_score, x="Score", y="Win Rate %",
                     color="Win Rate %", color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
-                    title="Win Rate % par score")
-                # Ligne 50% via shape
-                fig_wr.add_shape(type="line", x0=-0.5, x1=len(wr_by_score)-0.5,
-                    y0=50, y1=50, xref="x", yref="y",
-                    line=dict(color="#ffffff66", dash="dash", width=1))
+                    title="Win Rate % par score — ligne 50% = seuil breakeven")
                 fig_wr.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
-                    xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f", range=[0,100]))
+                    xaxis=dict(gridcolor="#1e3a5f"),
+                    yaxis=dict(gridcolor="#1e3a5f", range=[0,100]))
                 st.plotly_chart(fig_wr, use_container_width=True)
 
             with bt_tab3:
@@ -630,11 +624,6 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                     line=dict(color="#00ff88", width=2),
                     fill="tozeroy", fillcolor="#00ff8815"
                 ))
-                # Ligne zéro via shape
-                fig_cap.add_shape(type="line",
-                    x0=0, x1=len(df_sorted),
-                    y0=0, y1=0, xref="x", yref="y",
-                    line=dict(color="#ffffff44", dash="dash", width=1))
                 fig_cap.update_layout(title="Courbe de capital cumulée",
                     paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
