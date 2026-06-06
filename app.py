@@ -614,7 +614,8 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 st.markdown("**Courbe de capital — PnL cumulé %**")
                 st.line_chart(df_sorted["PnL cumulé %"])
 
-            # Export            bt_excel = BytesIO()
+            # Export
+            bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
                 df_bt.to_excel(writer, index=False, sheet_name="Trades")
             st.download_button("⬇️ Télécharger résultats backtest", data=bt_excel.getvalue(),
