@@ -623,33 +623,30 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
             except Exception:
                 best_strat = list(stats.keys())[0]
 
+            # Tableau comparatif simple — évite tous les problèmes de types
+            rows_display = []
             for strat, data in stats.items():
-                is_best = strat == best_strat
-                border  = "#ffd700" if is_best else "#1e3a5f"
-                bg      = "#1a130015" if is_best else "#0b142288"
-                wr  = float(data.get("win_rate", 0) or 0)
-                exp = float(data.get("expectancy", 0) or 0)
-                pf  = float(data.get("profit_factor", 0) or 0)
-                wc  = "#00ff88" if wr>=55 else "#fbbf24" if wr>=45 else "#f87171"
-                exc = "#00ff88" if exp>0 else "#f87171"
-                pfc = "#00ff88" if pf>=1.5 else "#fbbf24" if pf>=1.0 else "#f87171"
-                crown = " 👑 MEILLEURE" if is_best else ""
+                try:
+                    crown = " 👑" if strat == best_strat else ""
+                    rows_display.append({
+                        "Stratégie":      strat_labels.get(strat, strat) + crown,
+                        "Trades":         str(data.get("total", 0)),
+                        "Win Rate":       str(data.get("win_rate", 0)) + "%",
+                        "Expectancy":     str(data.get("expectancy", 0)) + "%",
+                        "Profit Factor":  str(data.get("profit_factor", 0)),
+                        "Gain moyen":     "+" + str(data.get("avg_win", 0)) + "%",
+                        "Perte moyenne":  str(data.get("avg_loss", 0)) + "%",
+                        "PnL Total":      str(data.get("total_pnl", 0)) + "%",
+                        "Max Pertes Consec": str(data.get("max_consec_loss", 0)),
+                    })
+                except Exception:
+                    pass
 
-                st.markdown(
-                    f'<div style="background:{bg};border:2px solid {border};'
-                    f'border-radius:10px;padding:14px 18px;margin:8px 0;">',
-                    unsafe_allow_html=True
+            if rows_display:
+                st.dataframe(
+                    pd.DataFrame(rows_display).set_index("Stratégie"),
+                    use_container_width=True
                 )
-                total_t = data.get("total", 0)
-                st.markdown(f"**{strat_labels.get(strat, strat)}**{crown} &nbsp;|&nbsp; {total_t} trades")
-                c1,c2,c3,c4,c5,c6 = st.columns(6)
-                c1.metric("Win Rate",      f"{data.get('win_rate', 0)}%")
-                c2.metric("Expectancy",    f"{data.get('expectancy', 0)}%")
-                c3.metric("Profit Factor", f"{data.get('profit_factor', 0)}")
-                c4.metric("Gain moyen",    f"+{data.get('avg_win', 0)}%")
-                c5.metric("Perte moyenne", f"{data.get('avg_loss', 0)}%")
-                c6.metric("PnL Total",     f"{data.get('total_pnl', 0)}%")
-                st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("---")
             selected_strat = st.selectbox(
