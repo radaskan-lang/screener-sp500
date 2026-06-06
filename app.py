@@ -615,15 +615,24 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 "F": "F — 50%+Stop 3%",
             }
 
-            best_strat = max(stats.keys(), key=lambda s: stats[s].get("expectancy", -99))
+            try:
+                best_strat = max(
+                    stats.keys(),
+                    key=lambda s: float(stats[s].get("expectancy", -99) or -99)
+                )
+            except Exception:
+                best_strat = list(stats.keys())[0]
 
             for strat, data in stats.items():
                 is_best = strat == best_strat
                 border  = "#ffd700" if is_best else "#1e3a5f"
                 bg      = "#1a130015" if is_best else "#0b142288"
-                wc  = "#00ff88" if data["win_rate"]>=55 else "#fbbf24" if data["win_rate"]>=45 else "#f87171"
-                exc = "#00ff88" if data["expectancy"]>0 else "#f87171"
-                pfc = "#00ff88" if data["profit_factor"]>=1.5 else "#fbbf24" if data["profit_factor"]>=1.0 else "#f87171"
+                wr  = float(data.get("win_rate", 0) or 0)
+                exp = float(data.get("expectancy", 0) or 0)
+                pf  = float(data.get("profit_factor", 0) or 0)
+                wc  = "#00ff88" if wr>=55 else "#fbbf24" if wr>=45 else "#f87171"
+                exc = "#00ff88" if exp>0 else "#f87171"
+                pfc = "#00ff88" if pf>=1.5 else "#fbbf24" if pf>=1.0 else "#f87171"
                 crown = " 👑 MEILLEURE" if is_best else ""
 
                 st.markdown(
