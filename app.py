@@ -16,6 +16,7 @@ from convergence import calc_convergence, build_trade_report, get_day_of_week_ad
 from volume_signals import detect_volume_anomaly
 from claude_scorer import claude_score_batch, verdict_color, conviction_badge
 from earnings_sector import check_earnings, get_sector_strength, sector_bonus_score
+from gap_detector import detect_gaps
 
 # ─────────────────────────────────────────────
 # 📊 BACKTEST INLINE — 6 STRATÉGIES DE SORTIE
@@ -395,7 +396,9 @@ def fetch(ticker):
         vol_anom      = detect_volume_anomaly(hist)
 
         # Earnings
-        earn          = check_earnings(ticker)
+        earn     = check_earnings(ticker)
+        # Gaps
+        gap_data = detect_gaps(hist)
 
         info       = t.info
         revenue_gr = info.get("revenueGrowth", None)
@@ -459,6 +462,14 @@ def fetch(ticker):
             "Earnings_Days":   earn["days_until"],
             "Earnings_Risk":   earn["risk_level"],
             "Earnings_Avoid":  earn["should_avoid"],
+            # Gaps
+            "Gap_Badge":       gap_data["badge"],
+            "Gap_Signal":      gap_data["top_signal"],
+            "Gap_Score":       gap_data["score"],
+            "Gap_Pct":         gap_data["recent_gap_pct"],
+            "Gap_Direction":   gap_data["gap_direction"],
+            "Gap_Support":     gap_data["nearest_support"],
+            "Gap_Summary":     gap_data["summary"],
         }
     except Exception:
         return None
@@ -559,6 +570,21 @@ def ai_score(row):
             top = str(row.get("Top_Pattern", "") or "")
             if top and top != "—":
                 reasons.append(f"✅ Pattern: {top}")
+    except Exception:
+        pass
+
+    # Bonus / Pénalité Gap (max +20, min -15)
+    try:
+        gap_score = int(row.get("Gap_Score", 0) or 0)
+        gap_sig   = str(row.get("Gap_Signal") or "")
+        gap_dir   = str(row.get("Gap_Direction", "NONE") or "NONE")
+        if gap_score > 0:
+            score += min(gap_score, 20)
+            if gap_sig and gap_sig not in ["None", "—", ""]:
+                reasons.append(f"✅ {gap_sig[:45]}")
+        elif gap_score < 0:
+            score += max(gap_score, -15)
+            reasons.append(f"🔴 Gap baissier récent")
     except Exception:
         pass
 
@@ -1266,6 +1292,20 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
                 except Exception:
                     pass
 
+            # Gap signal
+            gap_badge   = str(row.get("Gap_Badge", "") or "")
+            gap_signal  = str(row.get("Gap_Signal", "") or "")
+            gap_score_v = row.get("Gap_Score", 0)
+            gap_support = row.get("Gap_Support", None)
+            if gap_badge and gap_badge not in ["—", ""]:
+                gap_color = "#00ff88" if (gap_score_v or 0) > 0 else "#f87171"
+                st.markdown(
+                    f"<span style='color:{gap_color};font-weight:700;font-size:0.85rem;'>{gap_badge}</span>",
+                    unsafe_allow_html=True
+                )
+                if gap_support:
+                    st.markdown(f"🛡️ Support gap : `${gap_support}` — niveau de stop solide")
+
             # Earnings warning
             earn_badge = str(row.get("Earnings_Badge", "") or "")
             earn_risk  = str(row.get("Earnings_Risk", "") or "")
@@ -1339,10 +1379,11 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
     st.markdown("### 📈 Vue d'ensemble")
     ai_col  = "AI Score Ajuste"
     sig_col = "AI Signal Ajuste"
-    vol_anormal = len(df[df["VOL_Score"] >= 15]) if "VOL_Score" in df.columns else 0
-    col1,col2,col3,col4,col5,col6,col7,col8 = st.columns(8)
+    vol_anormal  = len(df[df["VOL_Score"] >= 15]) if "VOL_Score" in df.columns else 0
+    gaps_forts   = len(df[df["Gap_Score"] >= 12]) if "Gap_Score" in df.columns else 0
+    col1,col2,col3,col4,col5,col6,col7,col8,col9 = st.columns(9)
     for col, val, label in zip(
-        [col1,col2,col3,col4,col5,col6,col7,col8],
+        [col1,col2,col3,col4,col5,col6,col7,col8,col9],
         [
             len(df),
             len(df[df[sig_col]=="🟢 STRONG BUY"]),
@@ -1352,8 +1393,9 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             len(report),
             len(df[df.get("Conv_N", pd.Series([0]*len(df))) >= 4]) if "Conv_N" in df.columns else 0,
             vol_anormal,
+            gaps_forts,
         ],
-        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv≥4","Vol Anormal"]
+        ["Analysées","Strong Buy","Buy","Hold","Avoid",f"Top {top_n}","Conv≥4","Vol Anormal","Gaps Forts"]
     ):
         col.markdown(f"""<div class="metric-card">
             <div class="metric-value">{val}</div>
@@ -1432,6 +1474,7 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
         "Ticker","Sector","Prix","MA50","MA200",
         "RSI","MACD_Hist","Vol_Ratio","Rev_Growth",
         "Earnings_Badge","Earnings_Date","Earnings_Risk",
+        "Gap_Badge","Gap_Signal","Gap_Score","Gap_Pct","Gap_Support",
         "VOL_Badge","VOL_Signal","VOL_Ratio","VOL_52W_Rank",
         "Entree","Stop","Target","RR_Ratio","Risque_Pct","Gain_Pct","RR_Badge",
         "TTM_Signal","DIV_Signal","EMA_Level","ADV_Score","ADV_Badge",
