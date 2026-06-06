@@ -5,7 +5,7 @@ from datetime import datetime
 import openpyxl
 from io import BytesIO
 
-# ── TICKERS 
+# ── # ── TICKERS ─────────────────────────────
 import pandas as pd
 
 def get_sp500_tickers():
