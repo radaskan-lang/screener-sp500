@@ -735,12 +735,22 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
             bt_excel = BytesIO()
             with pd.ExcelWriter(bt_excel, engine="openpyxl") as writer:
                 df_bt.to_excel(writer, index=False, sheet_name="Trades")
-                rows = [{"Stratégie": strat_labels[s], "Win Rate %": d["win_rate"],
-                         "Expectancy %": d["expectancy"], "Profit Factor": d["profit_factor"],
-                         "Gain Moy %": d["avg_win"], "Perte Moy %": d["avg_loss"],
-                         "PnL Total %": d["total_pnl"], "Max Pertes Consec": d["max_consec_loss"]}
-                        for s, d in stats.items()]
-                pd.DataFrame(rows).to_excel(writer, index=False, sheet_name="Comparatif")
+                try:
+                    rows = []
+                    for s, d in stats.items():
+                        rows.append({
+                            "Strategie":      strat_labels.get(s, s),
+                            "Win Rate %":     d.get("win_rate", 0),
+                            "Expectancy %":   d.get("expectancy", 0),
+                            "Profit Factor":  d.get("profit_factor", 0),
+                            "Gain Moy %":     d.get("avg_win", 0),
+                            "Perte Moy %":    d.get("avg_loss", 0),
+                            "PnL Total %":    d.get("total_pnl", 0),
+                            "Max Pertes":     d.get("max_consec_loss", 0),
+                        })
+                    pd.DataFrame(rows).to_excel(writer, index=False, sheet_name="Comparatif")
+                except Exception:
+                    pass
             st.download_button("⬇️ Télécharger comparatif 6 stratégies", data=bt_excel.getvalue(),
                 file_name=f"backtest_6strat_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
