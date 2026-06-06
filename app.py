@@ -590,7 +590,10 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 fig_pnl = px.histogram(df_bt, x="pnl_pct", nbins=40, color="result",
                     color_discrete_map={"WIN":"#00ff88","LOSS":"#f87171","BREAKEVEN":"#fbbf24"},
                     title="Distribution des PnL")
-                fig_pnl.add_vline(x=0, line_dash="dash", line_color="#ffffff66")
+                # Ligne à zéro via shape (compatible toutes versions Plotly)
+                fig_pnl.add_shape(type="line", x0=0, x1=0,
+                    y0=0, y1=1, yref="paper",
+                    line=dict(color="#ffffff66", dash="dash", width=1))
                 fig_pnl.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
                     xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f"))
@@ -599,7 +602,7 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
             with bt_tab2:
                 df_bt["score_bucket"] = pd.cut(df_bt["score"],
                     bins=[0,40,50,60,70,80,101],
-                    labels=["<40","40-50","50-60","60-70","70-80","≥80"])
+                    labels=["<40","40-50","50-60","60-70","70-80",">=80"])
                 wr_by_score = df_bt.groupby("score_bucket", observed=True).apply(
                     lambda x: round(len(x[x["result"]=="WIN"])/len(x)*100, 1)
                 ).reset_index()
@@ -607,7 +610,10 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                 fig_wr = px.bar(wr_by_score, x="Score", y="Win Rate %",
                     color="Win Rate %", color_continuous_scale=["#f87171","#fbbf24","#00ff88"],
                     title="Win Rate % par score")
-                fig_wr.add_hline(y=50, line_dash="dash", line_color="#ffffff66", annotation_text="50% seuil")
+                # Ligne 50% via shape
+                fig_wr.add_shape(type="line", x0=-0.5, x1=len(wr_by_score)-0.5,
+                    y0=50, y1=50, xref="x", yref="y",
+                    line=dict(color="#ffffff66", dash="dash", width=1))
                 fig_wr.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
                     xaxis=dict(gridcolor="#1e3a5f"), yaxis=dict(gridcolor="#1e3a5f", range=[0,100]))
@@ -624,7 +630,11 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                     line=dict(color="#00ff88", width=2),
                     fill="tozeroy", fillcolor="#00ff8815"
                 ))
-                fig_cap.add_hline(y=0, line_dash="dash", line_color="#ffffff44")
+                # Ligne zéro via shape
+                fig_cap.add_shape(type="line",
+                    x0=0, x1=len(df_sorted),
+                    y0=0, y1=0, xref="x", yref="y",
+                    line=dict(color="#ffffff44", dash="dash", width=1))
                 fig_cap.update_layout(title="Courbe de capital cumulée",
                     paper_bgcolor="#0a0e1a", plot_bgcolor="#111827",
                     font_color="#e2e8f0", title_font_color="#00ff88",
