@@ -640,40 +640,41 @@ with st.expander("🔬 Lancer le Backtest", expanded=False):
                     f'border-radius:10px;padding:14px 18px;margin:8px 0;">',
                     unsafe_allow_html=True
                 )
-                st.markdown(f"**{strat_labels[strat]}**{crown} &nbsp;|&nbsp; {data['total']} trades")
+                total_t = data.get("total", 0)
+                st.markdown(f"**{strat_labels.get(strat, strat)}**{crown} &nbsp;|&nbsp; {total_t} trades")
                 c1,c2,c3,c4,c5,c6 = st.columns(6)
-                c1.metric("Win Rate",      f"{data['win_rate']}%")
-                c2.metric("Expectancy",    f"{data['expectancy']}%")
-                c3.metric("Profit Factor", f"{data['profit_factor']}")
-                c4.metric("Gain moyen",    f"+{data['avg_win']}%")
-                c5.metric("Perte moyenne", f"{data['avg_loss']}%")
-                c6.metric("PnL Total",     f"{data['total_pnl']}%")
+                c1.metric("Win Rate",      f"{data.get('win_rate', 0)}%")
+                c2.metric("Expectancy",    f"{data.get('expectancy', 0)}%")
+                c3.metric("Profit Factor", f"{data.get('profit_factor', 0)}")
+                c4.metric("Gain moyen",    f"+{data.get('avg_win', 0)}%")
+                c5.metric("Perte moyenne", f"{data.get('avg_loss', 0)}%")
+                c6.metric("PnL Total",     f"{data.get('total_pnl', 0)}%")
                 st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("---")
             selected_strat = st.selectbox(
                 "📊 Voir le détail d'une stratégie",
                 options=list(stats.keys()),
-                format_func=lambda s: f"Stratégie {strat_labels[s]}",
-                index=list(stats.keys()).index(best_strat)
+                format_func=lambda s: strat_labels.get(s, s),
+                index=0
             )
 
             sd = stats[selected_strat]
-            st.markdown(f"#### Détail — {strat_labels[selected_strat]}")
+            st.markdown(f"#### Détail — {strat_labels.get(selected_strat, selected_strat)}")
             d1,d2,d3,d4 = st.columns(4)
-            d1.metric("Meilleur trade",          f"+{sd['best']}%")
-            d2.metric("Pire trade",              f"{sd['worst']}%")
-            d3.metric("Pertes consécutives max", sd["max_consec_loss"])
-            d4.metric("PnL cumulé",              f"{sd['total_pnl']}%")
+            d1.metric("Meilleur trade",          f"+{sd.get('best', 0)}%")
+            d2.metric("Pire trade",              f"{sd.get('worst', 0)}%")
+            d3.metric("Pertes consécutives max", sd.get("max_consec_loss", 0))
+            d4.metric("PnL cumulé",              f"{sd.get('total_pnl', 0)}%")
 
             st.markdown("**Performance par niveau de score IA :**")
-            score_items = list(sd["score_stats"].items())
+            score_items = list((sd.get("score_stats") or {}).items())
             if score_items:
-                sc_cols = st.columns(len(score_items))
+                sc_cols = st.columns(min(len(score_items), 3))
                 for col, (slabel, sdata) in zip(sc_cols, score_items):
-                    wr = sdata["win_rate"]
+                    wr = float(sdata.get("win_rate", 0) or 0)
                     ic = "🟢" if wr>=55 else "🟡" if wr>=45 else "🔴"
-                    col.markdown(f"{ic} **Score {slabel}**\n\nWin: `{wr}%` | PnL: `{sdata['avg_pnl']}%` | N=`{sdata['n']}`")
+                    col.markdown(f"{ic} **Score {slabel}**\n\nWin: `{wr}%` | PnL: `{sdata.get('avg_pnl',0)}%` | N=`{sdata.get('n',0)}`")
 
             pnl_col = f"pnl_{selected_strat}"
             res_col = f"result_{selected_strat}"
