@@ -1615,18 +1615,37 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
 
     # ── EXPORT ──
     st.markdown("---")
-    col_exp1, col_exp2 = st.columns(2)
+    st.markdown("### 📥 Export")
+
+    col_exp1, col_exp2, col_exp3 = st.columns(3)
+
+    # ── Pense-bête trades ──
     with col_exp1:
+        st.markdown("**📋 Pense-bête Lundi matin**")
+        if not report.empty:
+            try:
+                pense_bete = _generate_cheat_sheet(report, market_status, regime)
+                st.download_button(
+                    "📋 Télécharger pense-bête",
+                    data=pense_bete,
+                    file_name=f"pense_bete_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            except Exception as e:
+                st.error(f"Erreur pense-bête: {e}")
+
+    with col_exp2:
         st.markdown("**Export rapport Top trades**")
         if not report.empty:
-            excel_report = to_excel(report[cols_display if all(c in report.columns for c in cols_display) else [c for c in cols_display if c in report.columns]])
+            excel_report = to_excel(report[[c for c in cols_display if c in report.columns]])
             st.download_button(
                 f"⬇️ Top {top_n} — Rapport convergence",
                 data=excel_report,
                 file_name=f"top{top_n}_convergence_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-    with col_exp2:
+
+    with col_exp3:
         st.markdown("**Export tableau complet**")
         excel_full = to_excel(df_filtered[[c for c in cols_display if c in df_filtered.columns]])
         st.download_button(
@@ -1635,3 +1654,229 @@ if st.button(f"🔄 Lancer — S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
+
+
+def _generate_cheat_sheet(report, market_status, regime):
+    """
+    Génère un pense-bête Excel formaté pour le lundi matin.
+    Une ligne par trade avec toutes les infos essentielles.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import (
+        PatternFill, Font, Alignment, Border, Side, GradientFill
+    )
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Pense-Bête Trades"
+
+    # ── Couleurs ──
+    CLR_DARK    = "0A0E1A"
+    CLR_GREEN   = "00FF88"
+    CLR_RED     = "F87171"
+    CLR_YELLOW  = "FBBF24"
+    CLR_BLUE    = "4A90D0"
+    CLR_GREY    = "1E2A3A"
+    CLR_WHITE   = "E2E8F0"
+    CLR_GOLD    = "FFD700"
+    CLR_PURPLE  = "A78BFA"
+
+    def fill(hex_color):
+        return PatternFill("solid", fgColor=hex_color)
+
+    def font(color="E2E8F0", bold=False, size=11):
+        return Font(color=color, bold=bold, size=size, name="Courier New")
+
+    def border():
+        s = Side(style="thin", color="1E3A5F")
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    def center():
+        return Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    def left():
+        return Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    # ── En-tête principal ──
+    ws.merge_cells("A1:K1")
+    ws["A1"] = f"📊 PENSE-BÊTE SWING TRADING — Semaine du {datetime.now().strftime('%d %B %Y')}"
+    ws["A1"].fill      = fill(CLR_DARK)
+    ws["A1"].font      = Font(color=CLR_GREEN, bold=True, size=14, name="Courier New")
+    ws["A1"].alignment = center()
+    ws.row_dimensions[1].height = 30
+
+    ws.merge_cells("A2:K2")
+    ws["A2"] = f"Marché : {regime}  |  SPY vs MA50 : {market_status.get('spy_vs_ma50','—')}%  |  {market_status.get('vix_label','VIX N/A')}  |  Min 4/6 signaux convergents"
+    ws["A2"].fill      = fill(CLR_GREY)
+    ws["A2"].font      = Font(color=CLR_YELLOW, bold=False, size=10, name="Courier New")
+    ws["A2"].alignment = center()
+    ws.row_dimensions[2].height = 20
+
+    # ── Règle d'or ──
+    ws.merge_cells("A3:K3")
+    ws["A3"] = "⚡ RÈGLE ABSOLUE : N'entrer que si l'ouverture lundi est ≤ au prix MAX indiqué  •  Stop-loss sacré  •  Sortie vendredi"
+    ws["A3"].fill      = fill("1A0F00")
+    ws["A3"].font      = Font(color=CLR_GOLD, bold=True, size=10, name="Courier New")
+    ws["A3"].alignment = center()
+    ws.row_dimensions[3].height = 18
+
+    # ── Headers colonnes ──
+    headers = [
+        "Rang", "Ticker", "Secteur", "Prix\nActuel",
+        "⚠️ MAX\nOuverture", "🎯 Entrée", "🛑 Stop\n-Loss",
+        "🏆 Target", "R/R", "Conv\n6 sig", "Infos Clés"
+    ]
+    col_widths = [6, 8, 18, 10, 12, 10, 10, 10, 6, 8, 45]
+
+    for col_idx, (header, width) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=4, column=col_idx, value=header)
+        cell.fill      = fill(CLR_GREY)
+        cell.font      = Font(color=CLR_GREEN, bold=True, size=10, name="Courier New")
+        cell.alignment = center()
+        cell.border    = border()
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    ws.row_dimensions[4].height = 30
+    ws.freeze_panes = "A5"
+
+    # ── Lignes de trades ──
+    for idx, (_, row) in enumerate(report.iterrows()):
+        row_num  = idx + 5
+        rank     = idx + 1
+        ticker   = str(row.get("Ticker", ""))
+        sector   = str(row.get("Sector", ""))
+        price    = row.get("Prix", 0)
+        entree   = row.get("Entree", None)
+        stop     = row.get("Stop", None)
+        target   = row.get("Target", None)
+        rr       = row.get("RR_Ratio", None)
+        conv_n   = row.get("Conv_N", 0)
+        score_f  = row.get("Score_Final", row.get("AI Score Ajuste", 0))
+        risque   = row.get("Risque_Pct", None)
+        gain     = row.get("Gain_Pct", None)
+        earn_b   = str(row.get("Earnings_Badge", "✅") or "✅")
+        rs_b     = str(row.get("RS_Badge", "—") or "—")
+        sr_b     = str(row.get("SR_Badge", "—") or "—")
+        gap_b    = str(row.get("Gap_Badge", "—") or "—")
+        pattern  = str(row.get("Top_Pattern", "—") or "—")
+        vol_b    = str(row.get("VOL_Badge", "—") or "—")
+        conv_lbl = str(row.get("Conv_Label", "") or "")
+
+        # Prix max d'ouverture (gap 1.5%)
+        prix_max = round(float(entree) * 1.015, 2) if entree else "—"
+
+        # Couleur de la ligne
+        if rank == 1:
+            row_bg = "1A1300"
+        elif conv_n >= 5:
+            row_bg = "001A0F"
+        elif idx % 2 == 0:
+            row_bg = "0B1421"
+        else:
+            row_bg = "0A1220"
+
+        # Info clés résumées
+        infos = []
+        if earn_b and "Pas d'earnings" not in earn_b and earn_b not in ["✅","—"]:
+            infos.append(earn_b)
+        if gap_b and gap_b not in ["—",""]:
+            infos.append(gap_b)
+        if rs_b and rs_b not in ["—",""] and "Neutre" not in rs_b:
+            infos.append(rs_b)
+        if sr_b and sr_b not in ["—",""] and "neutre" not in sr_b.lower():
+            infos.append(sr_b)
+        if pattern and pattern not in ["—","None",""]:
+            infos.append(f"Pattern: {pattern}")
+        if vol_b and vol_b not in ["—",""]:
+            infos.append(vol_b)
+        infos_text = "  •  ".join(infos[:4]) if infos else "Setup technique pur"
+
+        # Données cellules
+        cells_data = [
+            (f"#{rank}", CLR_GOLD if rank == 1 else CLR_WHITE, True),
+            (ticker,   CLR_GREEN, True),
+            (sector,   CLR_WHITE, False),
+            (f"${price}" if price else "—", CLR_WHITE, True),
+            (f"${prix_max}" if prix_max != "—" else "—", CLR_RED, True),
+            (f"${entree}" if entree else "—",  CLR_WHITE, True),
+            (f"${stop}\n(-{risque}%)" if stop and risque else f"${stop}" if stop else "—", CLR_RED, True),
+            (f"${target}\n(+{gain}%)" if target and gain else f"${target}" if target else "—", CLR_GREEN, True),
+            (f"{rr}:1" if rr else "—", CLR_YELLOW, True),
+            (f"{conv_n}/6\n{conv_lbl[:8] if conv_lbl else ''}", CLR_GREEN if conv_n >= 5 else CLR_YELLOW, True),
+            (infos_text, CLR_WHITE, False),
+        ]
+
+        ws.row_dimensions[row_num].height = 40
+
+        for col_idx, (value, color, bold) in enumerate(cells_data, 1):
+            cell           = ws.cell(row=row_num, column=col_idx, value=str(value) if value else "—")
+            cell.fill      = fill(row_bg)
+            cell.font      = Font(color=color, bold=bold, size=9 if col_idx == 11 else 10, name="Courier New")
+            cell.alignment = center() if col_idx != 11 else left()
+            cell.border    = border()
+
+        # Bordure gauche colorée selon rang
+        left_color = CLR_GOLD if rank == 1 else CLR_GREEN if conv_n >= 5 else CLR_BLUE
+        ws.cell(row=row_num, column=1).border = Border(
+            left=Side(style="thick", color=left_color),
+            right=Side(style="thin", color="1E3A5F"),
+            top=Side(style="thin", color="1E3A5F"),
+            bottom=Side(style="thin", color="1E3A5F"),
+        )
+
+    # ── Section rappels ──
+    last_row = len(report) + 5
+    ws.merge_cells(f"A{last_row+1}:K{last_row+1}")
+    ws[f"A{last_row+1}"] = "RAPPELS IMPORTANTS"
+    ws[f"A{last_row+1}"].fill      = fill(CLR_GREY)
+    ws[f"A{last_row+1}"].font      = Font(color=CLR_GREEN, bold=True, size=11, name="Courier New")
+    ws[f"A{last_row+1}"].alignment = center()
+    ws.row_dimensions[last_row+1].height = 20
+
+    rappels = [
+        "✅ Vérifier le graphique sur TradingView avant d'entrer (Daily + 4H)",
+        "✅ Confirmer les earnings manuellement sur Yahoo Finance / Seeking Alpha",
+        "✅ N'entrer QUE si le prix d'ouverture lundi ≤ colonne MAX Ouverture",
+        "✅ Stop-loss est SACRÉ — jamais déplacé à la baisse",
+        "✅ Maximum 5-6 positions simultanées — pas 2 titres du même sous-secteur",
+        f"✅ Stratégie de sortie choisie cette semaine : _______________",
+        "✅ Sortie vendredi avant la clôture — ne pas garder le weekend",
+    ]
+    for i, rappel in enumerate(rappels):
+        r = last_row + 2 + i
+        ws.merge_cells(f"A{r}:K{r}")
+        ws[f"A{r}"] = rappel
+        ws[f"A{r}"].fill      = fill("060B14" if i % 2 == 0 else "0A1220")
+        ws[f"A{r}"].font      = Font(color=CLR_WHITE, size=10, name="Courier New")
+        ws[f"A{r}"].alignment = left()
+        ws.row_dimensions[r].height = 18
+
+    # ── Onglet récap signaux ──
+    ws2 = wb.create_sheet("Signaux Convergence")
+    ws2["A1"] = "Explication des signaux de convergence"
+    ws2["A1"].font = Font(color=CLR_GREEN, bold=True, size=12)
+
+    signaux_info = [
+        ("Signal", "Description", "Zone idéale"),
+        ("Trend MA50/MA200", "Prix > MA50 > MA200 = tendance haussière forte", "Prix > MA50 > MA200"),
+        ("RSI", "Indice de force relative — zone swing idéale", "45-65"),
+        ("MACD", "Momentum — histogramme positif = élan haussier", "> 0 (idéal > 0.3)"),
+        ("Volume", "Confirmation institutionnelle du mouvement", "> 1.5x la moyenne 20j"),
+        ("Pattern", "Formation chartiste reconnue", "Bull Flag, Cup&Handle, Double Bottom..."),
+        ("Avancés", "TTM Squeeze, Divergence RSI, EMA Alignement", "Score > 10"),
+    ]
+    for r, (s, d, z) in enumerate(signaux_info, 1):
+        ws2.cell(r, 1, s).font  = Font(bold=(r==1), color=CLR_GREEN if r==1 else CLR_WHITE)
+        ws2.cell(r, 2, d).font  = Font(color=CLR_WHITE)
+        ws2.cell(r, 3, z).font  = Font(color=CLR_YELLOW)
+        for c in [1,2,3]:
+            ws2.cell(r, c).fill = fill(CLR_GREY if r==1 else ("0B1421" if r%2==0 else "060B14"))
+    ws2.column_dimensions["A"].width = 22
+    ws2.column_dimensions["B"].width = 50
+    ws2.column_dimensions["C"].width = 30
+
+    # Sauvegarder
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
