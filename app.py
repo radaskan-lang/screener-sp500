@@ -183,6 +183,37 @@ def calc_volume_signal(volume, close):
 # 
 #  FETCH
 # 
+def detect_volume_anomaly(hist):
+    try:
+        if hist is None or hist.empty or len(hist) < 20:
+            return {"badge":"--","signal":None,"score":0,"vol_ratio":1.0}
+        volume = hist["Volume"]; close = hist["Close"]
+        avg_vol   = float(volume.rolling(20).mean().iloc[-1])
+        last_vol  = float(volume.iloc[-1])
+        vol_ratio = round(last_vol / avg_vol, 2) if avg_vol > 0 else 1.0
+        price = float(close.iloc[-1]); prev = float(close.iloc[-2])
+        score = 0; signal = None
+        if vol_ratio >= 3.0 and price > prev:
+            score = 20; signal = f"VOLUME CLIMAX haussier ({vol_ratio}x)"
+        elif vol_ratio >= 2.0 and price > prev:
+            score = 15; signal = f"Volume spike haussier ({vol_ratio}x)"
+        elif vol_ratio >= 1.5:
+            score = 10; signal = f"Volume fort ({vol_ratio}x)"
+            if len(volume) >= 5:
+                vols = volume.iloc[-5:].values
+                if all(vols[i] <= vols[i+1] for i in range(4)):
+                    score = 18; signal = "QUIET BUILDUP (volume qui s'accelere)"
+        elif vol_ratio >= 1.1:
+            score = 5
+        if score >= 18:   badge = "Volume exceptionnel"
+        elif score >= 10: badge = f"Volume fort -- {vol_ratio}x"
+        elif score >= 5:  badge = f"Volume correct ({vol_ratio}x)"
+        else:             badge = f"Volume faible ({vol_ratio}x)"
+        return {"badge":badge,"signal":signal,"score":score,"vol_ratio":vol_ratio}
+    except Exception:
+        return {"badge":"--","signal":None,"score":0,"vol_ratio":1.0}
+
+
 def fetch(ticker):
     try:
         from curl_cffi import requests as curl_requests
@@ -1064,4 +1095,4 @@ if st.button(f" Lancer  S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
+                   )
