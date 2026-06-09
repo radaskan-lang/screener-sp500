@@ -34,6 +34,10 @@ from trading_tools import (
     check_sector_diversity, get_sector_distribution
 )
 
+# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+# \ud83c\udfa8 PAGE CONFIG
+# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600&display=swap');
@@ -178,37 +182,6 @@ def calc_volume_signal(volume, close):
 # \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 # \ud83d\udcc8 FETCH
 # \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-def detect_volume_anomaly(hist):
-    try:
-        if hist is None or hist.empty or len(hist) < 20:
-            return {"badge":"—","signal":None,"score":0,"vol_ratio":1.0}
-        volume = hist["Volume"]; close = hist["Close"]
-        avg_vol   = float(volume.rolling(20).mean().iloc[-1])
-        last_vol  = float(volume.iloc[-1])
-        vol_ratio = round(last_vol / avg_vol, 2) if avg_vol > 0 else 1.0
-        price = float(close.iloc[-1]); prev = float(close.iloc[-2])
-        score = 0; signal = None
-        if vol_ratio >= 3.0 and price > prev:
-            score = 20; signal = f"VOLUME CLIMAX haussier ({vol_ratio}x)"
-        elif vol_ratio >= 2.0 and price > prev:
-            score = 15; signal = f"Volume spike haussier ({vol_ratio}x)"
-        elif vol_ratio >= 1.5:
-            score = 10; signal = f"Volume fort ({vol_ratio}x)"
-            if len(volume) >= 5:
-                vols = volume.iloc[-5:].values
-                if all(vols[i] <= vols[i+1] for i in range(4)):
-                    score = 18; signal = "QUIET BUILDUP (volume qui s'accélère)"
-        elif vol_ratio >= 1.1:
-            score = 5
-        if score >= 18:   badge = "⚡ Volume exceptionnel"
-        elif score >= 10: badge = f"⚡ Volume fort — {vol_ratio}x"
-        elif score >= 5:  badge = f"~ Volume correct ({vol_ratio}x)"
-        else:             badge = f"~ Volume faible ({vol_ratio}x)"
-        return {"badge":badge,"signal":signal,"score":score,"vol_ratio":vol_ratio}
-    except Exception:
-        return {"badge":"—","signal":None,"score":0,"vol_ratio":1.0}
-
-
 def fetch(ticker):
     try:
         t    = yf.Ticker(ticker)
@@ -296,26 +269,26 @@ def fetch(ticker):
             "ADV_Summary":   adv["summary"],
             "ADV_Active":    adv["n_active"],
             # Earnings
-            "Earnings_Badge": earn_data.get("badge","—"),
-            "Earnings_Date":  earn_data.get("next_date","—"),
+            "Earnings_Badge": earn_data.get("badge","--"),
+            "Earnings_Date":  earn_data.get("next_date","--"),
             "Earnings_Risk":  earn_data.get("risk","LOW"),
             # Volume anormal
-            "VOL_Badge":     vol_anom.get("badge","—") if vol_anom else "—",
+            "VOL_Badge":     vol_anom.get("badge","--") if vol_anom else "--",
             "VOL_Signal":    vol_anom.get("signal") if vol_anom else None,
             "VOL_Ratio":     vol_anom.get("vol_ratio",1.0) if vol_anom else 1.0,
             # Gap
-            "Gap_Badge":     gap_data.get("badge","—") if gap_data else "—",
+            "Gap_Badge":     gap_data.get("badge","--") if gap_data else "--",
             "Gap_Signal":    gap_data.get("signal") if gap_data else None,
             "Gap_Score":     gap_data.get("score",0) if gap_data else 0,
             "Gap_Support":   gap_data.get("gap_support") if gap_data else None,
             # Relative Strength
-            "RS_Badge":      rs_data.get("badge","—") if rs_data else "—",
-            "RS_Trend":      rs_data.get("trend","—") if rs_data else "—",
+            "RS_Badge":      rs_data.get("badge","--") if rs_data else "--",
+            "RS_Trend":      rs_data.get("trend","--") if rs_data else "--",
             "RS_5d":         rs_data.get("rs_5d",0) if rs_data else 0,
             "RS_Perf5d":     rs_data.get("perf_5d",0) if rs_data else 0,
             "SPY_Perf5d":    rs_data.get("spy_perf_5d",0) if rs_data else 0,
             # Support/Résistance 52w
-            "SR_Badge":      sr_data.get("badge","—") if sr_data else "—",
+            "SR_Badge":      sr_data.get("badge","--") if sr_data else "--",
             "SR_Signal":     sr_data.get("signal") if sr_data else None,
             "SR_High52w":    sr_data.get("high_52w") if sr_data else None,
             "SR_Low52w":     sr_data.get("low_52w") if sr_data else None,
@@ -346,19 +319,19 @@ def fetch(ticker):
             # Intraday
             "ID_VWAP":        vwap_data["vwap"] if vwap_data else None,
             "ID_VWAP_Dist":   vwap_data["price_vs_vwap"] if vwap_data else None,
-            "ID_VWAP_Badge":  vwap_data["badge"] if vwap_data else "—",
+            "ID_VWAP_Badge":  vwap_data["badge"] if vwap_data else "--",
             "ID_VWAP_Score":  vwap_data["score"] if vwap_data else 0,
             "ID_PDH":         vwap_data["pdh"] if vwap_data else None,
             "ID_PDL":         vwap_data["pdl"] if vwap_data else None,
             "ID_ORB_Break":   vwap_data["orb_breakout"] if vwap_data else None,
-            "ID_TF_Confirm":  multitf_data["confirmation"] if multitf_data else "—",
+            "ID_TF_Confirm":  multitf_data["confirmation"] if multitf_data else "--",
             "ID_TF_Align":    multitf_data["tf_alignment"] if multitf_data else 0,
             "ID_RSI_1H":      multitf_data["rsi_1h"] if multitf_data else None,
             "ID_RSI_15min":   multitf_data["rsi_15min"] if multitf_data else None,
-            "ID_TF_Badge":    multitf_data["badge"] if multitf_data else "—",
+            "ID_TF_Badge":    multitf_data["badge"] if multitf_data else "--",
             "ID_TF_Score":    multitf_data["score"] if multitf_data else 0,
             "ID_Mom_Rel":     mom_data["relative_mom"] if mom_data else None,
-            "ID_Mom_Badge":   mom_data["badge"] if mom_data else "—",
+            "ID_Mom_Badge":   mom_data["badge"] if mom_data else "--",
             "ID_Mom_Score":   mom_data["score"] if mom_data else 0,
         }
     except Exception:
@@ -491,7 +464,7 @@ def ai_score(row):
         if vs > 0:
             score += min(vs, 25)
             vs_sig = str(row.get("VOL_Signal") or "")
-            if vs_sig and vs_sig not in ["None","—",""]:
+            if vs_sig and vs_sig not in ["None","--",""]:
                 reasons.append(f"⚡ {vs_sig[:40]}")
     except Exception:
         pass
@@ -502,7 +475,7 @@ def ai_score(row):
         if gs != 0:
             score += max(-15, min(gs, 20))
             g_sig = str(row.get("Gap_Signal") or "")
-            if g_sig and g_sig not in ["None","—",""]:
+            if g_sig and g_sig not in ["None","--",""]:
                 reasons.append(f"📈 {g_sig[:40]}")
     except Exception:
         pass
@@ -543,7 +516,7 @@ def ai_score(row):
         fib_dist_r  = float(row.get("FIB_DistResist",99) or 99)
         if fib_score != 0:
             score += fib_score
-            if fib_signal and fib_signal not in ["None","—",""]:
+            if fib_signal and fib_signal not in ["None","--",""]:
                 reasons.append(f"📐 {fib_signal[:50]}")
         if fib_valid == False:
             score -= 10
@@ -557,7 +530,7 @@ def ai_score(row):
         bb_signal = str(row.get("BB_Signal") or "")
         if bb_score != 0:
             score += bb_score
-            if bb_signal and bb_signal not in ["None","—",""]:
+            if bb_signal and bb_signal not in ["None","--",""]:
                 reasons.append(f"📊 {bb_signal[:40]}")
     except Exception:
         pass
@@ -678,7 +651,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 📊 Signaux Intraday")
-    use_intraday = st.checkbox("⚡ Activer signaux intraday", value=False,
+    use_intraday = st.checkbox("Activer signaux intraday", value=False,
         help="VWAP · PDH/PDL · Multi-TF · Momentum vs SPY — délai 15min")
     if use_intraday:
         st.markdown("<div style='background:#4a90d015;border:1px solid #4a90d033;border-radius:6px;padding:8px;font-size:0.78rem;color:#93c5fd;margin-top:4px;'>⚡ VWAP + PDH/PDL + Opening Range<br>⚡ Multi-TF RSI (Daily+1H+15min)<br>⚡ Momentum intraday vs SPY<br>⚠️ Délai 15min — indicatif<br>⏱️ Ralentit le scan (~2x)</div>", unsafe_allow_html=True)
@@ -930,11 +903,11 @@ if st.button(f"\ud83d\udd04 Lancer \u2014 S&P 500 complet ({len(SP500_TICKERS)} 
             fib_resist  = row.get("FIB_Resist", None)
             fib_dist_r  = row.get("FIB_DistResist", None)
             fib_color   = {"REBOND_KEY":"#00ff88","BREAKOUT":"#00ff88","ZONE_SAINE":"#86efac","NEUTRE":"#fbbf24","RESISTANCE_PROCHE":"#f87171"}.get(fib_context,"#fbbf24")
-            fib_display = fib_badge if fib_badge and fib_badge != "—" else f"Fibonacci {fib_context}"
+            fib_display = fib_badge if fib_badge and fib_badge != "--" else f"Fibonacci {fib_context}"
             st.markdown(f"**📐 Fibonacci :** <span style='color:{fib_color};font-weight:700;'>{fib_display}</span>", unsafe_allow_html=True)
             if not fib_valid and fib_warning:
                 st.markdown(f"<div style='background:#f871711a;border-left:3px solid #f87171;border-radius:4px;padding:8px;font-size:0.85rem;color:#f87171;'>⚠️ {fib_warning}</div>", unsafe_allow_html=True)
-            elif fib_signal_v and fib_signal_v not in ["None","—",""]:
+            elif fib_signal_v and fib_signal_v not in ["None","--",""]:
                 st.markdown(f"<span style='color:{fib_color};font-size:0.85rem;'>{fib_signal_v}</span>", unsafe_allow_html=True)
             fib_parts = []
             if fib_support: fib_parts.append(f"Support Fib: `${fib_support}`")
@@ -1082,4 +1055,4 @@ if st.button(f"\ud83d\udd04 Lancer \u2014 S&P 500 complet ({len(SP500_TICKERS)} 
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
+                )
