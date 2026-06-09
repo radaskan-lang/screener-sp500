@@ -34,16 +34,6 @@ from trading_tools import (
     check_sector_diversity, get_sector_distribution
 )
 
-# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-# \ud83c\udfa8 PAGE CONFIG
-# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-st.set_page_config(
-    page_title="S&P 500 IA Screener Pro",
-    page_icon="\ud83d\udcca",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600&display=swap');
@@ -1092,4 +1082,4 @@ if st.button(f"\ud83d\udd04 Lancer \u2014 S&P 500 complet ({len(SP500_TICKERS)} 
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+)
