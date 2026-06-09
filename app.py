@@ -185,7 +185,9 @@ def calc_volume_signal(volume, close):
 # 
 def fetch(ticker):
     try:
-        t    = yf.Ticker(ticker)
+        from curl_cffi import requests as curl_requests
+        session = curl_requests.Session(impersonate="chrome")
+        t    = yf.Ticker(ticker, session=session)
         hist = t.history(period="1y")
         if hist is None or hist.empty or len(hist) < 50:
             return None
@@ -1062,4 +1064,4 @@ if st.button(f" Lancer  S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+)
