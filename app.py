@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="S&P 500 IA Screener Pro",
@@ -1095,4 +1096,4 @@ if st.button(f" Lancer  S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                   )
+    )
