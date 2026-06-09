@@ -1055,4 +1055,4 @@ if st.button(f"\ud83d\udd04 Lancer \u2014 S&P 500 complet ({len(SP500_TICKERS)} 
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
+        )
