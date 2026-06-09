@@ -339,7 +339,9 @@ def fetch(ticker):
             "ID_Mom_Badge":   mom_data["badge"] if mom_data else "--",
             "ID_Mom_Score":   mom_data["score"] if mom_data else 0,
         }
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"FETCH ERROR {ticker}: {str(e)[:100]}")
         return None
 
 def fetch_parallel(tickers, max_workers=10):
