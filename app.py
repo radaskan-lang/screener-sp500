@@ -221,9 +221,13 @@ def fetch(ticker):
             multitf_data = calc_multitf_signals(ticker, hist)
             mom_data     = calc_intraday_momentum(ticker)
 
-        info       = t.info
-        revenue_gr = info.get("revenueGrowth", None)
-        sector     = info.get("sector", "N/A")
+        try:
+            info       = t.info
+            revenue_gr = info.get("revenueGrowth", None)
+            sector     = info.get("sector", "N/A")
+        except Exception:
+            revenue_gr = None
+            sector     = "N/A"
 
         return {
             "Ticker":        ticker,
@@ -1056,4 +1060,4 @@ if st.button(f" Lancer  S&P 500 complet ({len(SP500_TICKERS)} actions)"):
             data=excel_full,
             file_name=f"screener_{regime}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+    )
