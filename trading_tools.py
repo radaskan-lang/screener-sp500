@@ -189,6 +189,23 @@ def save_paper_trades(trades):
         return False
 
 
+def close_paper_trade(trade_id, exit_price):
+    """Ferme un trade paper avec son prix de sortie."""
+    trades = load_paper_trades()
+    for t in trades:
+        if t.get("id") == trade_id:
+            ep  = float(t["entry_price"])
+            xp  = float(exit_price)
+            pnl = round((xp - ep) / ep * 100, 2)
+            t["exit_price"] = round(xp, 2)
+            t["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
+            t["pnl_pct"]    = pnl
+            t["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+            t["status"]     = "CLOSED"
+            break
+    save_paper_trades(trades)
+
+
 def add_paper_trade(ticker, entry_price, stop_price, target_price,
                     conv_n, score, strategy, sector, week_date):
     """Ajoute un trade fictif."""
