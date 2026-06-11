@@ -340,17 +340,31 @@ def update_paper_results():
             entry  = float(trade["entry_price"])
             stop   = float(trade["stop_price"])
             target = float(trade["target_price"])
+            # Date d'entree du trade
+            entry_date = trade.get("added_at", trade.get("week", ""))[:10]
 
-            # Filtrer uniquement heures de marche 9h30-16h00 EST
+            # Filtrer uniquement les bougies APRES l'entree
             hist_intra.index = pd.to_datetime(hist_intra.index)
+            try:
+                if entry_date:
+                    hist_intra = hist_intra[hist_intra.index.date >= pd.to_datetime(entry_date).date()]
+            except Exception:
+                pass
+
+            # Filtrer heures de marche 9h30-16h00 EST
             try:
                 market_hours = hist_intra.between_time("09:30", "16:00")
             except Exception:
                 market_hours = hist_intra
 
             if market_hours.empty:
-                current_price = float(hist_intra["Close"].iloc[-1])
-                trade["current_price"] = round(current_price, 2)
+                # Pas encore de donnees de marche depuis l'entree - trade toujours ouvert
+                try:
+                    current_price = float(hist_intra["Close"].iloc[-1])
+                    trade["current_price"] = round(current_price, 2)
+                    trade["current_pnl"]   = round((current_price - entry) / entry * 100, 2)
+                except Exception:
+                    pass
                 continue
 
             current_price = float(market_hours["Close"].iloc[-1])
