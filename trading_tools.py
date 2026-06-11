@@ -313,6 +313,166 @@ def add_paper_trade(ticker, entry_price, stop_price, target_price,
 def update_paper_results():
     """
     Met a jour les trades paper ouverts.
+    Gere les sorties selon la strategie choisie.
+    Stop-loss declenche SEULEMENT pendant les heures de marche (9h30-16h00 EST).
+    """
+    from datetime import datetime
+    import pytz
+
+    trades  = load_paper_trades()
+    updated = False
+
+    # Verifier si c'est vendredi apres 15h30 EST
+    try:
+        est     = pytz.timezone("US/Eastern")
+        now_est = datetime.now(est)
+        is_friday_close = (now_est.weekday() == 4 and now_est.hour >= 15 and now_est.minute >= 30)
+    except Exception:
+        # Si pytz pas disponible, verifier heure UTC (15h30 EST = 20h30 UTC)
+        now_utc = datetime.utcnow()
+        is_friday_close = (now_utc.weekday() == 4 and now_utc.hour >= 20 and now_utc.minute >= 30)
+
+    for trade in trades:
+        if trade.get("status") != "OPEN":
+            continue
+        try:
+            ticker   = trade["ticker"]
+            entry    = float(trade["entry_price"])
+            stop     = float(trade["stop_price"])
+            target   = float(trade["target_price"])
+            strategy = str(trade.get("strategy", "C")).upper()
+
+            # Calculer le stop et target selon la strategie
+            if "A" in strategy or "+5" in strategy:
+                strat_target = round(entry * 1.05, 2)
+                strat_stop   = stop
+            elif "B" in strategy or "+7" in strategy:
+                strat_target = round(entry * 1.07, 2)
+                strat_stop   = stop
+            elif "D" in strategy or "STOP 3" in strategy or "3%" in strategy:
+                strat_target = target
+                strat_stop   = round(entry * 0.97, 2)
+            elif "E" in strategy or "STOP 5" in strategy or "5%" in strategy:
+                strat_target = target
+                strat_stop   = round(entry * 0.95, 2)
+            elif "F" in strategy:
+                strat_target = round(entry * 1.05, 2)
+                strat_stop   = round(entry * 0.97, 2)
+            else:
+                # Strategie C (vendredi) - stop et target ATR
+                strat_target = target
+                strat_stop   = stop
+
+            # Donnees intraday
+            try:
+                from curl_cffi import requests as cr
+                session  = cr.Session(impersonate="chrome")
+                hist_intra = yf.Ticker(ticker, session=session).history(period="5d", interval="30m")
+            except Exception:
+                hist_intra = yf.Ticker(ticker).history(period="5d", interval="30m")
+
+            if hist_intra is None or hist_intra.empty:
+                hist_day = yf.Ticker(ticker).history(period="2d")
+                current_price = float(hist_day["Close"].iloc[-1]) if hist_day is not None and not hist_day.empty else entry
+                trade["current_price"] = round(current_price, 2)
+                trade["current_pnl"]   = round((current_price - entry) / entry * 100, 2)
+
+                # Vendredi close pour strategie C
+                if "C" in strategy and is_friday_close:
+                    pnl = round((current_price - entry) / entry * 100, 2)
+                    trade["exit_price"] = round(current_price, 2)
+                    trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
+                    trade["pnl_pct"]    = pnl
+                    trade["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+                    trade["status"]     = "CLOSED"
+                    trade["exit_note"]  = "Vente vendredi (strategie C)"
+                    updated = True
+                continue
+
+            # Filtrer heures de marche + apres date d'entree
+            hist_intra.index = pd.to_datetime(hist_intra.index)
+            entry_date = trade.get("added_at", "")[:10]
+            try:
+                if entry_date:
+                    hist_intra = hist_intra[hist_intra.index.date >= pd.to_datetime(entry_date).date()]
+            except Exception:
+                pass
+
+            try:
+                market_hours = hist_intra.between_time("09:30", "16:00")
+            except Exception:
+                market_hours = hist_intra
+
+            current_price = float(market_hours["Close"].iloc[-1]) if not market_hours.empty else entry
+            trade["current_price"] = round(current_price, 2)
+            trade["current_pnl"]   = round((current_price - entry) / entry * 100, 2)
+
+            # Strategie C — vente vendredi
+            if "C" in strategy and is_friday_close:
+                pnl = round((current_price - entry) / entry * 100, 2)
+                trade["exit_price"] = round(current_price, 2)
+                trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
+                trade["pnl_pct"]    = pnl
+                trade["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+                trade["status"]     = "CLOSED"
+                trade["exit_note"]  = "Vente vendredi (strategie C)"
+                updated = True
+                continue
+
+            # Verifier stop et target pendant heures de marche
+            hit_stop   = False
+            hit_target = False
+            exit_price_final = None
+
+            for _, candle in market_hours.iterrows():
+                open_p = float(candle["Open"])
+                low_p  = float(candle["Low"])
+                high_p = float(candle["High"])
+
+                # Gap baissier sous le stop a l'ouverture
+                if open_p <= strat_stop and not hit_stop:
+                    hit_stop = True
+                    exit_price_final = round(open_p, 2)
+                    break
+                # Stop touche intraday
+                if low_p <= strat_stop and not hit_stop:
+                    hit_stop = True
+                    exit_price_final = round(strat_stop, 2)
+                    break
+                # Target atteint
+                if high_p >= strat_target:
+                    hit_target = True
+                    exit_price_final = round(strat_target, 2)
+                    break
+
+            if hit_stop and not hit_target:
+                pnl = round((exit_price_final - entry) / entry * 100, 2)
+                trade["exit_price"] = exit_price_final
+                trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
+                trade["pnl_pct"]    = pnl
+                trade["result"]     = "LOSS"
+                trade["status"]     = "CLOSED"
+                trade["exit_note"]  = f"Stop-loss ({strategy})"
+                updated = True
+            elif hit_target:
+                pnl = round((exit_price_final - entry) / entry * 100, 2)
+                trade["exit_price"] = exit_price_final
+                trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
+                trade["pnl_pct"]    = pnl
+                trade["result"]     = "WIN"
+                trade["status"]     = "CLOSED"
+                trade["exit_note"]  = f"Target atteint ({strategy})"
+                updated = True
+
+        except Exception:
+            continue
+
+    if updated:
+        save_paper_trades(trades)
+
+    return trades
+    """
+    Met a jour les trades paper ouverts.
     Stop-loss declenche SEULEMENT pendant les heures de marche (9h30-16h00 EST).
     Si gap baissier a l'ouverture sous le stop → execution au prix d'ouverture.
     """
