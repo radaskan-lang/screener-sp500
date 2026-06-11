@@ -8,19 +8,94 @@ import yfinance as yf
 
 
 # ─────────────────────────────────────────────
-# 📋 PAPER TRADING + JOURNAL + DATA QUALITY
-# from trading_tools import (
-#     check_data_quality, save_scan_results, load_scan_results,
-#     add_paper_trade, get_paper_trades, update_paper_results,
-#     add_real_trade, get_real_trades, get_sector_diversity
-# )
+# PAPER TRADING + JOURNAL + DATA QUALITY
+# Stockage GitHub persistant
 # ─────────────────────────────────────────────
 
-SAVE_FILE     = "/tmp/screener_last_scan.json"
-PAPER_FILE    = "/tmp/screener_paper_trades.json"
-JOURNAL_FILE  = "/tmp/screener_journal.json"
+PAPER_FILE  = "/tmp/screener_paper_trades.json"
+JOURNAL_FILE= "/tmp/screener_journal.json"
+MAX_PER_SECTOR = 2
 
-MAX_PER_SECTOR = 2  # Maximum de positions par secteur
+
+def _use_github():
+    """Verifie si GitHub storage est disponible."""
+    try:
+        from github_storage import github_storage_available
+        return github_storage_available()
+    except Exception:
+        return False
+
+
+def load_paper_trades():
+    """Charge les paper trades — GitHub en priorite, /tmp en fallback."""
+    if _use_github():
+        try:
+            from github_storage import load_paper_trades_github
+            data = load_paper_trades_github()
+            if data is not None:
+                return data
+        except Exception:
+            pass
+    try:
+        if os.path.exists(PAPER_FILE):
+            with open(PAPER_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+
+def save_paper_trades(trades):
+    """Sauvegarde les paper trades — GitHub + /tmp."""
+    # Toujours sauvegarder en local pour la session
+    try:
+        with open(PAPER_FILE, "w") as f:
+            json.dump(trades, f, indent=2)
+    except Exception:
+        pass
+    # Sauvegarder sur GitHub si disponible
+    if _use_github():
+        try:
+            from github_storage import save_paper_trades_github
+            return save_paper_trades_github(trades)
+        except Exception:
+            pass
+    return True
+
+
+def load_journal():
+    """Charge le journal — GitHub en priorite, /tmp en fallback."""
+    if _use_github():
+        try:
+            from github_storage import load_journal_github
+            data = load_journal_github()
+            if data is not None:
+                return data
+        except Exception:
+            pass
+    try:
+        if os.path.exists(JOURNAL_FILE):
+            with open(JOURNAL_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+
+def save_journal(trades):
+    """Sauvegarde le journal — GitHub + /tmp."""
+    try:
+        with open(JOURNAL_FILE, "w") as f:
+            json.dump(trades, f, indent=2)
+    except Exception:
+        pass
+    if _use_github():
+        try:
+            from github_storage import save_journal_github
+            return save_journal_github(trades)
+        except Exception:
+            pass
+    return True
 
 
 # ─────────────────────────────────────────────
