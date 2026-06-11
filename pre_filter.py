@@ -25,7 +25,12 @@ def prefilter_ticker(ticker):
     Retourne (ticker, True/False, raison_exclusion).
     """
     try:
-        hist = yf.Ticker(ticker).history(period="3mo")
+        try:
+            from curl_cffi import requests as cr
+            session = cr.Session(impersonate="chrome")
+            hist = yf.Ticker(ticker, session=session).history(period="3mo")
+        except Exception:
+            hist = yf.Ticker(ticker).history(period="3mo")
 
         if hist is None or hist.empty or len(hist) < 25:
             return ticker, False, "Données insuffisantes"
