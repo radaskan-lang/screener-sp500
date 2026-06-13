@@ -175,7 +175,7 @@
       "id": "EXC_2026-W24_Sim1",
       "ticker": "EXC",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 46.35,
       "stop_price": 45.01,
       "target_price": 49.03,
