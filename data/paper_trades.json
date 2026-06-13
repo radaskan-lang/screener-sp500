@@ -438,25 +438,6 @@
       "added_at": "2026-06-13T20:06:22.468520"
     },
     {
-      "id": "HPE_2026-W24_Sim1",
-      "ticker": "HPE",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 48.31,
-      "stop_price": 41.84,
-      "target_price": 61.25,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Technology",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:06:22.538749"
-    },
-    {
       "id": "DTE_2026-W24_Sim1",
       "ticker": "DTE",
       "week": "2026-W24",
@@ -512,6 +493,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:06:24.814467"
+    },
+    {
+      "id": "HPE_2026-W24_Sim1",
+      "ticker": "HPE",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 48.31,
+      "stop_price": 41.84,
+      "target_price": 61.25,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Technology",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:06:25.775095"
     }
   ]
 }
