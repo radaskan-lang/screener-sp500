@@ -365,7 +365,7 @@
       "id": "DHI_2026-W24_Sim1",
       "ticker": "DHI",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 154.55,
       "stop_price": 148.34,
       "target_price": 166.97,
