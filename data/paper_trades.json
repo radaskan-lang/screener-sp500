@@ -1,25 +1,6 @@
 {
   "paper_trades": [
     {
-      "id": "HST_2026-W24_Sim1",
-      "ticker": "HST",
-      "week": "2026-W24",
-      "simulation": "Sim2",
-      "entry_price": 24.96,
-      "stop_price": 24.09,
-      "target_price": 26.71,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Real Estate",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:03:10.261800"
-    },
-    {
       "id": "HUM_2026-W24_Sim1",
       "ticker": "HUM",
       "week": "2026-W24",
@@ -379,6 +360,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:05:30.122694"
+    },
+    {
+      "id": "HST_2026-W24_Sim1",
+      "ticker": "HST",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 24.96,
+      "stop_price": 24.09,
+      "target_price": 26.71,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Real Estate",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:05:32.310727"
     }
   ]
 }
