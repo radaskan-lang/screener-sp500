@@ -365,7 +365,7 @@
       "id": "HST_2026-W24_Sim1",
       "ticker": "HST",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 24.96,
       "stop_price": 24.09,
       "target_price": 26.71,
