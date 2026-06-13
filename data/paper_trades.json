@@ -1,25 +1,6 @@
 {
   "paper_trades": [
     {
-      "id": "VMC_2026-W24_Sim1",
-      "ticker": "VMC",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 287.33,
-      "stop_price": 274.89,
-      "target_price": 312.2,
-      "conv_n": 4,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Basic Materials",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:00:27.474164"
-    },
-    {
       "id": "CCL_2026-W24_Sim1",
       "ticker": "CCL",
       "week": "2026-W24",
@@ -303,6 +284,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:03:43.971086"
+    },
+    {
+      "id": "VMC_2026-W24_Sim1",
+      "ticker": "VMC",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 287.33,
+      "stop_price": 274.89,
+      "target_price": 312.2,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Basic Materials",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:03:45.771339"
     }
   ]
 }
