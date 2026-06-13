@@ -191,25 +191,6 @@
       "added_at": "2026-06-13T19:05:34.581057"
     },
     {
-      "id": "ABBV_2026-W24_Sim1",
-      "ticker": "ABBV",
-      "week": "2026-W24",
-      "simulation": "Sim3",
-      "entry_price": 228.41,
-      "stop_price": 220.39,
-      "target_price": 244.45,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Healthcare",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:06:04.161220"
-    },
-    {
       "id": "AFL_2026-W24_Sim1",
       "ticker": "AFL",
       "week": "2026-W24",
@@ -379,6 +360,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:59:31.464984"
+    },
+    {
+      "id": "ABBV_2026-W24_Sim1",
+      "ticker": "ABBV",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 228.41,
+      "stop_price": 220.39,
+      "target_price": 244.45,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Healthcare",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:59:32.517419"
     }
   ]
 }
