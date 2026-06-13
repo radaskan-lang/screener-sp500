@@ -607,6 +607,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:35:20.221707"
+    },
+    {
+      "id": "PLD_2026-W24_Sim1",
+      "ticker": "PLD",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 149.19,
+      "stop_price": 144.56,
+      "target_price": 158.45,
+      "conv_n": 6,
+      "score": 91.6,
+      "strategy": "C Vendredi",
+      "sector": "Real Estate",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:35:21.190521"
     }
   ]
 }
