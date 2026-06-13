@@ -270,7 +270,7 @@
       "id": "ABBV_2026-W24_Sim1",
       "ticker": "ABBV",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 228.41,
       "stop_price": 220.39,
       "target_price": 244.45,
