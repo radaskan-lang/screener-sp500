@@ -362,25 +362,6 @@
       "added_at": "2026-06-13T20:06:18.560008"
     },
     {
-      "id": "DTE_2026-W24_Sim1",
-      "ticker": "DTE",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 147.86,
-      "stop_price": 143.63,
-      "target_price": 156.31,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:06:19.498246"
-    },
-    {
       "id": "CCL_2026-W24_Sim1",
       "ticker": "CCL",
       "week": "2026-W24",
@@ -398,25 +379,6 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:06:19.591152"
-    },
-    {
-      "id": "F_2026-W24_Sim1",
-      "ticker": "F",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 14.88,
-      "stop_price": 13.79,
-      "target_price": 17.06,
-      "conv_n": 4,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:06:20.359165"
     },
     {
       "id": "ENPH_2026-W24_Sim1",
@@ -512,6 +474,44 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:06:22.538749"
+    },
+    {
+      "id": "DTE_2026-W24_Sim1",
+      "ticker": "DTE",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 147.86,
+      "stop_price": 143.63,
+      "target_price": 156.31,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:06:22.942344"
+    },
+    {
+      "id": "F_2026-W24_Sim1",
+      "ticker": "F",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 14.88,
+      "stop_price": 13.79,
+      "target_price": 17.06,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:06:23.842507"
     }
   ]
 }
