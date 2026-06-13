@@ -267,25 +267,6 @@
       "added_at": "2026-06-13T20:06:18.560008"
     },
     {
-      "id": "ENPH_2026-W24_Sim1",
-      "ticker": "ENPH",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 54.75,
-      "stop_price": 45.67,
-      "target_price": 72.92,
-      "conv_n": 4,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Technology",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:06:20.553706"
-    },
-    {
       "id": "EIX_2026-W24_Sim1",
       "ticker": "EIX",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:37:54.217105"
+    },
+    {
+      "id": "ENPH_2026-W24_Sim1",
+      "ticker": "ENPH",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 54.75,
+      "stop_price": 45.67,
+      "target_price": 72.92,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "D Stop 3%",
+      "sector": "Technology",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:37:55.117628"
     }
   ]
 }
