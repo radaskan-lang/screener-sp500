@@ -289,7 +289,7 @@
       "id": "VRSK_2026-W24_Sim1",
       "ticker": "VRSK",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 184.35,
       "stop_price": 175.35,
       "target_price": 202.36,
