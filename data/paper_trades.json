@@ -267,25 +267,6 @@
       "added_at": "2026-06-13T19:06:16.021771"
     },
     {
-      "id": "BF-B_2026-W24_Sim1",
-      "ticker": "BF-B",
-      "week": "2026-W24",
-      "simulation": "Sim3",
-      "entry_price": 27.09,
-      "stop_price": 25.92,
-      "target_price": 29.42,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Consumer Defensive",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:06:17.845638"
-    },
-    {
       "id": "AES_2026-W24_Sim1",
       "ticker": "AES",
       "week": "2026-W24",
@@ -455,6 +436,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:59:38.944194"
+    },
+    {
+      "id": "BF-B_2026-W24_Sim1",
+      "ticker": "BF-B",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 27.09,
+      "stop_price": 25.92,
+      "target_price": 29.42,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Consumer Defensive",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:59:40.143599"
     }
   ]
 }
