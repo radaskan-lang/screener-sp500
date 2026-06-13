@@ -324,25 +324,6 @@
       "added_at": "2026-06-13T20:00:09.983822"
     },
     {
-      "id": "CCL_2026-W24_Sim1",
-      "ticker": "CCL",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 29.27,
-      "stop_price": 27.52,
-      "target_price": 32.77,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "E Stop 5%",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:05:12.985089"
-    },
-    {
       "id": "ENPH_2026-W24_Sim1",
       "ticker": "ENPH",
       "week": "2026-W24",
@@ -512,6 +493,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:05:49.463581"
+    },
+    {
+      "id": "CCL_2026-W24_Sim1",
+      "ticker": "CCL",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 29.27,
+      "stop_price": 27.52,
+      "target_price": 32.77,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:05:50.369306"
     }
   ]
 }
