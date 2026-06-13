@@ -419,25 +419,6 @@
       "added_at": "2026-06-13T20:06:21.556165"
     },
     {
-      "id": "EXC_2026-W24_Sim1",
-      "ticker": "EXC",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 46.35,
-      "stop_price": 45.01,
-      "target_price": 49.03,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:06:21.578625"
-    },
-    {
       "id": "DHI_2026-W24_Sim1",
       "ticker": "DHI",
       "week": "2026-W24",
@@ -512,6 +493,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:06:23.842507"
+    },
+    {
+      "id": "EXC_2026-W24_Sim1",
+      "ticker": "EXC",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 46.35,
+      "stop_price": 45.01,
+      "target_price": 49.03,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:06:24.814467"
     }
   ]
 }
