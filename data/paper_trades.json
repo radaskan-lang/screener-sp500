@@ -455,6 +455,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:00:05.798217"
+    },
+    {
+      "id": "JPM_2026-W24_Sim1",
+      "ticker": "JPM",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 321.68,
+      "stop_price": 311.85,
+      "target_price": 341.33,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:06.863752"
     }
   ]
 }
