@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T20:06:25.775095"
     },
     {
-      "id": "LIN_2026-W24_Sim1",
-      "ticker": "LIN",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 525.14,
-      "stop_price": 509.31,
-      "target_price": 556.81,
-      "conv_n": 6,
-      "score": 91.6,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Basic Materials",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:35:46.773332"
-    },
-    {
       "id": "PLD_2026-W24_Sim1",
       "ticker": "PLD",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:35:59.890287"
+    },
+    {
+      "id": "LIN_2026-W24_Sim1",
+      "ticker": "LIN",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 525.14,
+      "stop_price": 509.31,
+      "target_price": 556.81,
+      "conv_n": 6,
+      "score": 91.6,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Basic Materials",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:36:00.822331"
     }
   ]
 }
