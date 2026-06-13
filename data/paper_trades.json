@@ -115,25 +115,6 @@
       "added_at": "2026-06-13T19:06:09.765518"
     },
     {
-      "id": "CCL_2026-W24_Sim1",
-      "ticker": "CCL",
-      "week": "2026-W24",
-      "simulation": "Sim3",
-      "entry_price": 29.27,
-      "stop_price": 27.52,
-      "target_price": 32.77,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:06:16.021771"
-    },
-    {
       "id": "ABBV_2026-W24_Sim1",
       "ticker": "ABBV",
       "week": "2026-W24",
@@ -305,25 +286,6 @@
       "added_at": "2026-06-13T19:59:40.143599"
     },
     {
-      "id": "BRK-B_2026-W24_Sim1",
-      "ticker": "BRK-B",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 490.72,
-      "stop_price": 480.55,
-      "target_price": 511.06,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T3 Trailing 3%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:00:01.602739"
-    },
-    {
       "id": "EIX_2026-W24_Sim1",
       "ticker": "EIX",
       "week": "2026-W24",
@@ -493,6 +455,44 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:00:36.668451"
+    },
+    {
+      "id": "BRK-B_2026-W24_Sim1",
+      "ticker": "BRK-B",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 490.72,
+      "stop_price": 480.55,
+      "target_price": 511.06,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:37.696418"
+    },
+    {
+      "id": "CCL_2026-W24_Sim1",
+      "ticker": "CCL",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 29.27,
+      "stop_price": 27.52,
+      "target_price": 32.77,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:38.218845"
     }
   ]
 }
