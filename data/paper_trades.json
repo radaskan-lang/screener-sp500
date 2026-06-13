@@ -77,25 +77,6 @@
       "added_at": "2026-06-13T19:00:37.522509"
     },
     {
-      "id": "DHI_2026-W24_Sim1",
-      "ticker": "DHI",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 154.55,
-      "stop_price": 148.34,
-      "target_price": 166.97,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:00:39.241723"
-    },
-    {
       "id": "EXC_2026-W24_Sim1",
       "ticker": "EXC",
       "week": "2026-W24",
@@ -189,6 +170,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:03:01.266820"
+    },
+    {
+      "id": "DHI_2026-W24_Sim1",
+      "ticker": "DHI",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 154.55,
+      "stop_price": 148.34,
+      "target_price": 166.97,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:03:02.984185"
     }
   ]
 }
