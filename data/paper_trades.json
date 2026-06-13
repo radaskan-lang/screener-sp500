@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T21:37:16.610754"
     },
     {
-      "id": "DTE_2026-W24_Sim1",
-      "ticker": "DTE",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 147.86,
-      "stop_price": 143.63,
-      "target_price": 156.31,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "D Stop 3%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:37:58.018481"
-    },
-    {
       "id": "EXC_2026-W24_Sim1",
       "ticker": "EXC",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:38:16.727411"
+    },
+    {
+      "id": "DTE_2026-W24_Sim1",
+      "ticker": "DTE",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 147.86,
+      "stop_price": 143.63,
+      "target_price": 156.31,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:38:17.801681"
     }
   ]
 }
