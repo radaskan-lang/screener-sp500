@@ -365,7 +365,7 @@
       "id": "BRK-B_2026-W24_Sim1",
       "ticker": "BRK-B",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 490.72,
       "stop_price": 480.55,
       "target_price": 511.06,
