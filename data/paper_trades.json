@@ -251,7 +251,7 @@
       "id": "AES_2026-W24_Sim1",
       "ticker": "AES",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 14.72,
       "stop_price": 14.64,
       "target_price": 14.88,
