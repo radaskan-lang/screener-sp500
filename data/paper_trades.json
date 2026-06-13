@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T20:06:25.775095"
     },
     {
-      "id": "SO_2026-W24_Sim1",
-      "ticker": "SO",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 94.28,
-      "stop_price": 91.56,
-      "target_price": 99.72,
-      "conv_n": 7,
-      "score": 82.6,
-      "strategy": "B +7%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:36:53.137185"
-    },
-    {
       "id": "PFE_2026-W24_Sim1",
       "ticker": "PFE",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:37:10.447171"
+    },
+    {
+      "id": "SO_2026-W24_Sim1",
+      "ticker": "SO",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 94.28,
+      "stop_price": 91.56,
+      "target_price": 99.72,
+      "conv_n": 7,
+      "score": 82.6,
+      "strategy": "A +5%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:37:11.422022"
     }
   ]
 }
