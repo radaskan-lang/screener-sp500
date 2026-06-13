@@ -1,25 +1,6 @@
 {
   "paper_trades": [
     {
-      "id": "USB_2026-W24_Sim1",
-      "ticker": "USB",
-      "week": "2026-W24",
-      "simulation": "Sim3",
-      "entry_price": 59.12,
-      "stop_price": 57.21,
-      "target_price": 62.95,
-      "conv_n": 7,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:03:51.169320"
-    },
-    {
       "id": "BF-B_2026-W24_Sim1",
       "ticker": "BF-B",
       "week": "2026-W24",
@@ -379,6 +360,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:06:11.937322"
+    },
+    {
+      "id": "USB_2026-W24_Sim1",
+      "ticker": "USB",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 59.12,
+      "stop_price": 57.21,
+      "target_price": 62.95,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:06:13.962752"
     }
   ]
 }
