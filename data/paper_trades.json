@@ -96,25 +96,6 @@
       "added_at": "2026-06-13T19:59:32.517419"
     },
     {
-      "id": "USB_2026-W24_Sim1",
-      "ticker": "USB",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 59.12,
-      "stop_price": 57.21,
-      "target_price": 62.95,
-      "conv_n": 7,
-      "score": 100.0,
-      "strategy": "T3 Trailing 3%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:59:33.428156"
-    },
-    {
       "id": "UDR_2026-W24_Sim1",
       "ticker": "UDR",
       "week": "2026-W24",
@@ -531,6 +512,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:35:15.792029"
+    },
+    {
+      "id": "USB_2026-W24_Sim1",
+      "ticker": "USB",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 59.12,
+      "stop_price": 57.21,
+      "target_price": 62.95,
+      "conv_n": 7,
+      "score": 82.6,
+      "strategy": "C Vendredi",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:35:16.761132"
     }
   ]
 }
