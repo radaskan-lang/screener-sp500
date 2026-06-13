@@ -1,1 +1,23 @@
-{"paper_trades": []}
+{
+  "paper_trades": [
+    {
+      "id": "EXC_2026-W24_Sim1",
+      "ticker": "EXC",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 46.35,
+      "stop_price": 45.01,
+      "target_price": 49.03,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:00:04.270266"
+    }
+  ]
+}
