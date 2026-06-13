@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T21:37:16.610754"
     },
     {
-      "id": "F_2026-W24_Sim1",
-      "ticker": "F",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 14.88,
-      "stop_price": 13.79,
-      "target_price": 17.06,
-      "conv_n": 4,
-      "score": 100.0,
-      "strategy": "T3 Trailing 3%",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:39:17.271415"
-    },
-    {
       "id": "AES_2026-W24_Sim1",
       "ticker": "AES",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:39:34.029397"
+    },
+    {
+      "id": "F_2026-W24_Sim1",
+      "ticker": "F",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 14.88,
+      "stop_price": 13.79,
+      "target_price": 17.06,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:39:34.997922"
     }
   ]
 }
