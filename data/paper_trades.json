@@ -194,7 +194,7 @@
       "id": "HPE_2026-W24_Sim1",
       "ticker": "HPE",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 48.31,
       "stop_price": 41.84,
       "target_price": 61.25,
