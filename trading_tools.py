@@ -375,15 +375,15 @@ def update_paper_results():
                 trade["current_price"] = round(current_price, 2)
                 trade["current_pnl"]   = round((current_price - entry) / entry * 100, 2)
 
-                # Vendredi close pour strategie C
-                if "C" in strategy and is_friday_close:
+                # Vendredi close — toutes les strategies
+                if is_friday_close:
                     pnl = round((current_price - entry) / entry * 100, 2)
                     trade["exit_price"] = round(current_price, 2)
                     trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
                     trade["pnl_pct"]    = pnl
                     trade["result"]     = "WIN" if pnl >= 0 else "LOSS"
                     trade["status"]     = "CLOSED"
-                    trade["exit_note"]  = "Vente vendredi (strategie C)"
+                    trade["exit_note"]  = "Vente vendredi automatique"
                     updated = True
                 continue
 
@@ -405,15 +405,15 @@ def update_paper_results():
             trade["current_price"] = round(current_price, 2)
             trade["current_pnl"]   = round((current_price - entry) / entry * 100, 2)
 
-            # Strategie C — vente vendredi
-            if "C" in strategy and is_friday_close:
+            # Vente vendredi 15h30 — TOUTES les strategies
+            if is_friday_close:
                 pnl = round((current_price - entry) / entry * 100, 2)
                 trade["exit_price"] = round(current_price, 2)
                 trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
                 trade["pnl_pct"]    = pnl
                 trade["result"]     = "WIN" if pnl >= 0 else "LOSS"
                 trade["status"]     = "CLOSED"
-                trade["exit_note"]  = "Vente vendredi (strategie C)"
+                trade["exit_note"]  = "Vente vendredi automatique"
                 updated = True
                 continue
 
