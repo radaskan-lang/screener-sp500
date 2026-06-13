@@ -1,25 +1,6 @@
 {
   "paper_trades": [
     {
-      "id": "ENPH_2026-W24_Sim1",
-      "ticker": "ENPH",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 54.75,
-      "stop_price": 45.67,
-      "target_price": 72.92,
-      "conv_n": 4,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Technology",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:04:34.243525"
-    },
-    {
       "id": "DTE_2026-W24_Sim1",
       "ticker": "DTE",
       "week": "2026-W24",
@@ -493,6 +474,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:00:38.218845"
+    },
+    {
+      "id": "ENPH_2026-W24_Sim1",
+      "ticker": "ENPH",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 54.75,
+      "stop_price": 45.67,
+      "target_price": 72.92,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Technology",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:39.168979"
     }
   ]
 }
