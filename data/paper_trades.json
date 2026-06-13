@@ -327,7 +327,7 @@
       "id": "CCL_2026-W24_Sim1",
       "ticker": "CCL",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 29.27,
       "stop_price": 27.52,
       "target_price": 32.77,
