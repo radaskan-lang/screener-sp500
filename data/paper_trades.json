@@ -531,6 +531,44 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:35:16.761132"
+    },
+    {
+      "id": "SO_2026-W24_Sim1",
+      "ticker": "SO",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 94.28,
+      "stop_price": 91.56,
+      "target_price": 99.72,
+      "conv_n": 7,
+      "score": 82.6,
+      "strategy": "C Vendredi",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:35:17.733588"
+    },
+    {
+      "id": "PFE_2026-W24_Sim1",
+      "ticker": "PFE",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 26.29,
+      "stop_price": 25.57,
+      "target_price": 27.73,
+      "conv_n": 7,
+      "score": 82.6,
+      "strategy": "C Vendredi",
+      "sector": "Healthcare",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:35:18.180234"
     }
   ]
 }
