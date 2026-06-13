@@ -229,25 +229,6 @@
       "added_at": "2026-06-13T19:04:30.443286"
     },
     {
-      "id": "BRK-B_2026-W24_Sim1",
-      "ticker": "BRK-B",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 490.72,
-      "stop_price": 480.55,
-      "target_price": 511.06,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:04:32.305910"
-    },
-    {
       "id": "ENPH_2026-W24_Sim1",
       "ticker": "ENPH",
       "week": "2026-W24",
@@ -379,6 +360,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T19:05:18.753794"
+    },
+    {
+      "id": "BRK-B_2026-W24_Sim1",
+      "ticker": "BRK-B",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 490.72,
+      "stop_price": 480.55,
+      "target_price": 511.06,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T19:05:20.760282"
     }
   ]
 }
