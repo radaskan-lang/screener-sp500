@@ -365,7 +365,7 @@
       "id": "AFL_2026-W24_Sim1",
       "ticker": "AFL",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 118.15,
       "stop_price": 114.39,
       "target_price": 125.66,
