@@ -255,14 +255,6 @@ def load_paper_trades():
         return []
 
 
-def save_paper_trades(trades):
-    try:
-        with open(PAPER_FILE, "w") as f:
-            json.dump(trades, f, indent=2)
-        return True
-    except Exception:
-        return False
-
 
 def close_paper_trade(trade_id, exit_price):
     """Ferme un trade paper avec son prix de sortie."""
