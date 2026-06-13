@@ -58,25 +58,6 @@
       "added_at": "2026-06-13T19:05:30.122694"
     },
     {
-      "id": "HST_2026-W24_Sim1",
-      "ticker": "HST",
-      "week": "2026-W24",
-      "simulation": "Sim2",
-      "entry_price": 24.96,
-      "stop_price": 24.09,
-      "target_price": 26.71,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Real Estate",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:05:32.310727"
-    },
-    {
       "id": "AFL_2026-W24_Sim1",
       "ticker": "AFL",
       "week": "2026-W24",
@@ -474,6 +455,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:00:07.899202"
+    },
+    {
+      "id": "HST_2026-W24_Sim1",
+      "ticker": "HST",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 24.96,
+      "stop_price": 24.09,
+      "target_price": 26.71,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Real Estate",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:08.870489"
     }
   ]
 }
