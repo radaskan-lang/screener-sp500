@@ -365,7 +365,7 @@
       "id": "USB_2026-W24_Sim1",
       "ticker": "USB",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim3",
       "entry_price": 59.12,
       "stop_price": 57.21,
       "target_price": 62.95,
