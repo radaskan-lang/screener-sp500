@@ -305,25 +305,6 @@
       "added_at": "2026-06-13T19:59:40.143599"
     },
     {
-      "id": "AES_2026-W24_Sim1",
-      "ticker": "AES",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 14.72,
-      "stop_price": 14.64,
-      "target_price": 14.88,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T3 Trailing 3%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T20:00:00.572244"
-    },
-    {
       "id": "BRK-B_2026-W24_Sim1",
       "ticker": "BRK-B",
       "week": "2026-W24",
@@ -493,6 +474,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T20:00:09.983822"
+    },
+    {
+      "id": "AES_2026-W24_Sim1",
+      "ticker": "AES",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 14.72,
+      "stop_price": 14.64,
+      "target_price": 14.88,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T3 Trailing 3%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T20:00:36.668451"
     }
   ]
 }
