@@ -344,6 +344,7 @@ def update_paper_results():
             strategy = str(trade.get("strategy", "C")).upper()
 
             # Calculer le stop et target selon la strategie
+            is_trailing = "T" in strategy.upper()
             if "A" in strategy or "+5" in strategy:
                 strat_target = round(entry * 1.05, 2)
                 strat_stop   = stop
@@ -359,6 +360,10 @@ def update_paper_results():
             elif "F" in strategy:
                 strat_target = round(entry * 1.05, 2)
                 strat_stop   = round(entry * 0.97, 2)
+            elif is_trailing:
+                # Trailing stop - calcule dynamiquement bougie par bougie
+                strat_target = target
+                strat_stop   = stop  # stop initial
             else:
                 # Strategie C (vendredi) - stop et target ATR
                 strat_target = target
@@ -425,10 +430,22 @@ def update_paper_results():
             hit_target = False
             exit_price_final = None
 
+            trailing_high = entry  # Prix max atteint depuis l'entree
             for _, candle in market_hours.iterrows():
                 open_p = float(candle["Open"])
                 low_p  = float(candle["Low"])
                 high_p = float(candle["High"])
+
+                # Mettre a jour le trailing stop
+                if is_trailing:
+                    if high_p > trailing_high:
+                        trailing_high = high_p
+                    trailing_pct = 0.03  # 3% par defaut
+                    if "T5" in strategy.upper(): trailing_pct = 0.05
+                    elif "T3" in strategy.upper(): trailing_pct = 0.03
+                    strat_stop = round(trailing_high * (1 - trailing_pct), 2)
+                    # Ne jamais descendre sous le stop initial
+                    strat_stop = max(strat_stop, stop)
 
                 # Gap baissier sous le stop a l'ouverture
                 if open_p <= strat_stop and not hit_stop:
@@ -440,8 +457,8 @@ def update_paper_results():
                     hit_stop = True
                     exit_price_final = round(strat_stop, 2)
                     break
-                # Target atteint
-                if high_p >= strat_target:
+                # Target atteint (sauf trailing qui n'a pas de target fixe)
+                if not is_trailing and high_p >= strat_target:
                     hit_target = True
                     exit_price_final = round(strat_target, 2)
                     break
