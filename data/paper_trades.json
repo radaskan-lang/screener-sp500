@@ -251,7 +251,7 @@
       "id": "HUM_2026-W24_Sim1",
       "ticker": "HUM",
       "week": "2026-W24",
-      "simulation": "Sim1",
+      "simulation": "Sim2",
       "entry_price": 380.36,
       "stop_price": 362.93,
       "target_price": 415.21,
