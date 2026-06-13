@@ -275,20 +275,21 @@ def close_paper_trade(trade_id, exit_price):
             t["exit_price"] = round(xp, 2)
             t["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
             t["pnl_pct"]    = pnl
-            t["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+            t["result"]     = "WIN" if pnl >= 0 else "LOSS"
             t["status"]     = "CLOSED"
             break
     save_paper_trades(trades)
 
 
 def add_paper_trade(ticker, entry_price, stop_price, target_price,
-                    conv_n, score, strategy, sector, week_date):
+                    conv_n, score, strategy, sector, week_date, simulation="Sim1"):
     """Ajoute un trade fictif."""
     trades = load_paper_trades()
     trade = {
-        "id":           f"{ticker}_{week_date}",
+        "id":           f"{ticker}_{week_date}_{simulation}",
         "ticker":       ticker,
         "week":         week_date,
+        "simulation":   simulation,
         "entry_price":  round(float(entry_price), 2),
         "stop_price":   round(float(stop_price), 2),
         "target_price": round(float(target_price), 2),
@@ -383,7 +384,7 @@ def update_paper_results():
                     trade["exit_price"] = round(current_price, 2)
                     trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
                     trade["pnl_pct"]    = pnl
-                    trade["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+                    trade["result"]     = "WIN" if pnl >= 0 else "LOSS"
                     trade["status"]     = "CLOSED"
                     trade["exit_note"]  = "Vente vendredi (strategie C)"
                     updated = True
@@ -413,7 +414,7 @@ def update_paper_results():
                 trade["exit_price"] = round(current_price, 2)
                 trade["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
                 trade["pnl_pct"]    = pnl
-                trade["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+                trade["result"]     = "WIN" if pnl >= 0 else "LOSS"
                 trade["status"]     = "CLOSED"
                 trade["exit_note"]  = "Vente vendredi (strategie C)"
                 updated = True
@@ -668,7 +669,7 @@ def close_journal_trade(trade_id, exit_price, notes=""):
             t["exit_price"] = round(ep, 2)
             t["exit_date"]  = datetime.now().strftime("%Y-%m-%d")
             t["pnl_pct"]    = pnl
-            t["result"]     = "WIN" if pnl > 0.5 else "LOSS" if pnl < -0.5 else "BREAKEVEN"
+            t["result"]     = "WIN" if pnl >= 0 else "LOSS"
             t["status"]     = "CLOSED"
             if notes:
                 t["notes"] += f" | Sortie: {notes}"
