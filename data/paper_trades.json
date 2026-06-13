@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T20:06:25.775095"
     },
     {
-      "id": "CINF_2026-W24_Sim1",
-      "ticker": "CINF",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 169.52,
-      "stop_price": 164.36,
-      "target_price": 179.85,
-      "conv_n": 6,
-      "score": 87.4,
-      "strategy": "D Stop 3%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:36:37.774252"
-    },
-    {
       "id": "CVS_2026-W24_Sim1",
       "ticker": "CVS",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:36:58.054550"
+    },
+    {
+      "id": "CINF_2026-W24_Sim1",
+      "ticker": "CINF",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 169.52,
+      "stop_price": 164.36,
+      "target_price": 179.85,
+      "conv_n": 6,
+      "score": 87.4,
+      "strategy": "B +7%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:36:58.890817"
     }
   ]
 }
