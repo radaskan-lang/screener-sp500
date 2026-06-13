@@ -457,25 +457,6 @@
       "added_at": "2026-06-13T21:37:16.610754"
     },
     {
-      "id": "AES_2026-W24_Sim1",
-      "ticker": "AES",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 14.72,
-      "stop_price": 14.64,
-      "target_price": 14.88,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T21:38:26.717899"
-    },
-    {
       "id": "VRSK_2026-W24_Sim1",
       "ticker": "VRSK",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:38:34.792808"
+    },
+    {
+      "id": "AES_2026-W24_Sim1",
+      "ticker": "AES",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 14.72,
+      "stop_price": 14.64,
+      "target_price": 14.88,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:38:47.343197"
     }
   ]
 }
