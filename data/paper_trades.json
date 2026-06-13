@@ -39,25 +39,6 @@
       "added_at": "2026-06-13T19:06:08.105534"
     },
     {
-      "id": "VRSK_2026-W24_Sim1",
-      "ticker": "VRSK",
-      "week": "2026-W24",
-      "simulation": "Sim3",
-      "entry_price": 184.35,
-      "stop_price": 175.35,
-      "target_price": 202.36,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "C Vendredi",
-      "sector": "Industrials",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-13T19:06:09.765518"
-    },
-    {
       "id": "ABBV_2026-W24_Sim1",
       "ticker": "ABBV",
       "week": "2026-W24",
@@ -645,6 +626,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-13T21:37:52.206493"
+    },
+    {
+      "id": "VRSK_2026-W24_Sim1",
+      "ticker": "VRSK",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 184.35,
+      "stop_price": 175.35,
+      "target_price": 202.36,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "D Stop 3%",
+      "sector": "Industrials",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-13T21:37:53.133249"
     }
   ]
 }
