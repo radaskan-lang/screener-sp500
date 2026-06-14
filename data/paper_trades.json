@@ -343,25 +343,6 @@
       "added_at": "2026-06-14T00:21:39.470223"
     },
     {
-      "id": "USB_2026-W24_Sim1",
-      "ticker": "USB",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 59.12,
-      "stop_price": 57.21,
-      "target_price": 62.95,
-      "conv_n": 7,
-      "score": 100.0,
-      "strategy": "A +5%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:41.529060"
-    },
-    {
       "id": "TGT_2026-W24_Sim1",
       "ticker": "TGT",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:06:01.807062"
+    },
+    {
+      "id": "USB_2026-W24_Sim1",
+      "ticker": "USB",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 59.12,
+      "stop_price": 57.21,
+      "target_price": 62.95,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:06:02.855083"
     }
   ]
 }
