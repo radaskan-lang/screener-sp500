@@ -590,25 +590,6 @@
       "added_at": "2026-06-14T00:21:00.092826"
     },
     {
-      "id": "SYY_2026-W24_Sim1",
-      "ticker": "SYY",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 79.43,
-      "stop_price": 77.05,
-      "target_price": 84.19,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Consumer Defensive",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:01.116110"
-    },
-    {
       "id": "TJX_2026-W24_Sim1",
       "ticker": "TJX",
       "week": "2026-W24",
@@ -626,25 +607,6 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:01.193911"
-    },
-    {
-      "id": "TROW_2026-W24_Sim1",
-      "ticker": "TROW",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 109.97,
-      "stop_price": 106.47,
-      "target_price": 116.97,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:01.620157"
     },
     {
       "id": "CHRW_2026-W24_Sim1",
@@ -683,6 +645,44 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:02.116564"
+    },
+    {
+      "id": "SYY_2026-W24_Sim1",
+      "ticker": "SYY",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 79.43,
+      "stop_price": 77.05,
+      "target_price": 84.19,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Consumer Defensive",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:02.995940"
+    },
+    {
+      "id": "TROW_2026-W24_Sim1",
+      "ticker": "TROW",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 109.97,
+      "stop_price": 106.47,
+      "target_price": 116.97,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:03.505557"
     }
   ]
 }
