@@ -362,25 +362,6 @@
       "added_at": "2026-06-14T00:21:41.529060"
     },
     {
-      "id": "TFC_2026-W24_Sim1",
-      "ticker": "TFC",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 51.81,
-      "stop_price": 50.11,
-      "target_price": 55.21,
-      "conv_n": 7,
-      "score": 100.0,
-      "strategy": "A +5%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:42.643137"
-    },
-    {
       "id": "TJX_2026-W24_Sim1",
       "ticker": "TJX",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:05:56.682285"
+    },
+    {
+      "id": "TFC_2026-W24_Sim1",
+      "ticker": "TFC",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 51.81,
+      "stop_price": 50.11,
+      "target_price": 55.21,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:06:00.514818"
     }
   ]
 }
