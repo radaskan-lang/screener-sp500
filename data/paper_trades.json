@@ -514,25 +514,6 @@
       "added_at": "2026-06-13T21:40:23.900430"
     },
     {
-      "id": "ABBV_2026-W24_Sim1",
-      "ticker": "ABBV",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 228.41,
-      "stop_price": 220.39,
-      "target_price": 244.45,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Healthcare",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:20:45.229851"
-    },
-    {
       "id": "UDR_2026-W24_Sim1",
       "ticker": "UDR",
       "week": "2026-W24",
@@ -683,6 +664,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:20:52.750433"
+    },
+    {
+      "id": "ABBV_2026-W24_Sim1",
+      "ticker": "ABBV",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 228.41,
+      "stop_price": 220.39,
+      "target_price": 244.45,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Healthcare",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:20:54.302860"
     }
   ]
 }
