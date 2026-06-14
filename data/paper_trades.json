@@ -514,25 +514,6 @@
       "added_at": "2026-06-14T00:21:47.129361"
     },
     {
-      "id": "HST_2026-W24_Sim1",
-      "ticker": "HST",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 24.96,
-      "stop_price": 24.09,
-      "target_price": 26.71,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "E Stop 5%",
-      "sector": "Real Estate",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T23:04:22.297499"
-    },
-    {
       "id": "KLAC_2026-W24_Sim1",
       "ticker": "KLAC",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:04:44.357259"
+    },
+    {
+      "id": "HST_2026-W24_Sim1",
+      "ticker": "HST",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 24.96,
+      "stop_price": 24.09,
+      "target_price": 26.71,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "D Stop 3%",
+      "sector": "Real Estate",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:04:45.574841"
     }
   ]
 }
