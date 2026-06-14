@@ -514,25 +514,6 @@
       "added_at": "2026-06-14T00:21:47.129361"
     },
     {
-      "id": "JPM_2026-W24_Sim1",
-      "ticker": "JPM",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 321.68,
-      "stop_price": 311.85,
-      "target_price": 341.33,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T23:05:03.516769"
-    },
-    {
       "id": "AES_2026-W24_Sim1",
       "ticker": "AES",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:05:16.469923"
+    },
+    {
+      "id": "JPM_2026-W24_Sim1",
+      "ticker": "JPM",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 321.68,
+      "stop_price": 311.85,
+      "target_price": 341.33,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:05:17.690531"
     }
   ]
 }
