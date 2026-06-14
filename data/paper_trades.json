@@ -495,25 +495,6 @@
       "added_at": "2026-06-13T21:40:23.900430"
     },
     {
-      "id": "AFL_2026-W24_Sim1",
-      "ticker": "AFL",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 118.15,
-      "stop_price": 114.39,
-      "target_price": 125.66,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:25.352123"
-    },
-    {
       "id": "UDR_2026-W24_Sim1",
       "ticker": "UDR",
       "week": "2026-W24",
@@ -683,6 +664,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:38.498564"
+    },
+    {
+      "id": "AFL_2026-W24_Sim1",
+      "ticker": "AFL",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 118.15,
+      "stop_price": 114.39,
+      "target_price": 125.66,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:39.470223"
     }
   ]
 }
