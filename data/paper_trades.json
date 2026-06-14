@@ -495,25 +495,6 @@
       "added_at": "2026-06-13T21:40:23.900430"
     },
     {
-      "id": "TJX_2026-W24_Sim1",
-      "ticker": "TJX",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 168.92,
-      "stop_price": 163.95,
-      "target_price": 178.87,
-      "conv_n": 6,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "Consumer Cyclical",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:01.193911"
-    },
-    {
       "id": "TGT_2026-W24_Sim1",
       "ticker": "TGT",
       "week": "2026-W24",
@@ -683,6 +664,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:13.788383"
+    },
+    {
+      "id": "TJX_2026-W24_Sim1",
+      "ticker": "TJX",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 168.92,
+      "stop_price": 163.95,
+      "target_price": 178.87,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "C Vendredi",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:14.747012"
     }
   ]
 }
