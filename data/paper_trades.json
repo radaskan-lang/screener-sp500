@@ -514,25 +514,6 @@
       "added_at": "2026-06-14T00:21:47.129361"
     },
     {
-      "id": "AES_2026-W24_Sim1",
-      "ticker": "AES",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 14.72,
-      "stop_price": 14.64,
-      "target_price": 14.88,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "E Stop 5%",
-      "sector": "Utilities",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T23:04:16.634927"
-    },
-    {
       "id": "EIX_2026-W24_Sim1",
       "ticker": "EIX",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:04:24.748838"
+    },
+    {
+      "id": "AES_2026-W24_Sim1",
+      "ticker": "AES",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 14.72,
+      "stop_price": 14.64,
+      "target_price": 14.88,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "D Stop 3%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:04:39.868493"
     }
   ]
 }
