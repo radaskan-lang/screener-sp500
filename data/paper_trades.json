@@ -362,25 +362,6 @@
       "added_at": "2026-06-14T00:21:45.150688"
     },
     {
-      "id": "CHRW_2026-W24_Sim1",
-      "ticker": "CHRW",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 194.32,
-      "stop_price": 185.74,
-      "target_price": 211.48,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "A +5%",
-      "sector": "Industrials",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:47.129361"
-    },
-    {
       "id": "EIX_2026-W24_Sim1",
       "ticker": "EIX",
       "week": "2026-W24",
@@ -702,6 +683,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T23:06:04.743807"
+    },
+    {
+      "id": "CHRW_2026-W24_Sim1",
+      "ticker": "CHRW",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 194.32,
+      "stop_price": 185.74,
+      "target_price": 211.48,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "T5 Trailing 5%",
+      "sector": "Industrials",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T23:06:05.707682"
     }
   ]
 }
