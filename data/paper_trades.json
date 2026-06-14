@@ -495,25 +495,6 @@
       "added_at": "2026-06-13T21:40:23.900430"
     },
     {
-      "id": "TROW_2026-W24_Sim1",
-      "ticker": "TROW",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 109.97,
-      "stop_price": 106.47,
-      "target_price": 116.97,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Financial Services",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:32.422267"
-    },
-    {
       "id": "CHRW_2026-W24_Sim1",
       "ticker": "CHRW",
       "week": "2026-W24",
@@ -683,6 +664,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:45.150688"
+    },
+    {
+      "id": "TROW_2026-W24_Sim1",
+      "ticker": "TROW",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 109.97,
+      "stop_price": 106.47,
+      "target_price": 116.97,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:46.166905"
     }
   ]
 }
