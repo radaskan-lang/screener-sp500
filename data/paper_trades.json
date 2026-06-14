@@ -495,25 +495,6 @@
       "added_at": "2026-06-13T21:40:23.900430"
     },
     {
-      "id": "CHRW_2026-W24_Sim1",
-      "ticker": "CHRW",
-      "week": "2026-W24",
-      "simulation": "Sim1",
-      "entry_price": 194.32,
-      "stop_price": 185.74,
-      "target_price": 211.48,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "B +7%",
-      "sector": "Industrials",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-14T00:21:33.335273"
-    },
-    {
       "id": "ABBV_2026-W24_Sim1",
       "ticker": "ABBV",
       "week": "2026-W24",
@@ -683,6 +664,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-14T00:21:46.166905"
+    },
+    {
+      "id": "CHRW_2026-W24_Sim1",
+      "ticker": "CHRW",
+      "week": "2026-W24",
+      "simulation": "Sim1",
+      "entry_price": 194.32,
+      "stop_price": 185.74,
+      "target_price": 211.48,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Industrials",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-14T00:21:47.129361"
     }
   ]
 }
