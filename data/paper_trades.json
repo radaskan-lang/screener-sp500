@@ -276,14 +276,14 @@
       "target_price": 26.24,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "A +5%",
+      "strategy": "B +7%",
       "sector": "Consumer Defensive",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:33:53.526781"
+      "added_at": "2026-06-15T00:33:54.410996"
     }
   ]
 }
