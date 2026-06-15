@@ -417,6 +417,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:47.788702"
+    },
+    {
+      "id": "BF-B_2026-W25_Sim1",
+      "ticker": "BF-B",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 27.09,
+      "stop_price": 25.92,
+      "target_price": 29.42,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "N/A",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:48.708559"
     }
   ]
 }
