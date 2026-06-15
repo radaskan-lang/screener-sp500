@@ -352,14 +352,14 @@
       "target_price": 146.02,
       "conv_n": 6,
       "score": 100.0,
-      "strategy": "E Stop 5%",
+      "strategy": "T3 Trailing 3%",
       "sector": "Consumer Defensive",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:27.124678"
+      "added_at": "2026-06-15T00:34:27.985577"
     }
   ]
 }
