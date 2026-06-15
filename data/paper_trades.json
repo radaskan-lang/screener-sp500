@@ -360,6 +360,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:28.882257"
+    },
+    {
+      "id": "SYY_2026-W25_Sim1",
+      "ticker": "SYY",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 79.43,
+      "stop_price": 77.05,
+      "target_price": 84.19,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Defensive",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:29.711718"
     }
   ]
 }
