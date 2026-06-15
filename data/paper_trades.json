@@ -333,14 +333,14 @@
       "target_price": 178.87,
       "conv_n": 6,
       "score": 100.0,
-      "strategy": "B +7%",
+      "strategy": "C Vendredi",
       "sector": "Consumer Cyclical",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:18.161772"
+      "added_at": "2026-06-15T00:34:19.009707"
     }
   ]
 }
