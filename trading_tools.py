@@ -275,10 +275,11 @@ def close_paper_trade(trade_id, exit_price):
 
 def add_paper_trade(ticker, entry_price, stop_price, target_price,
                     conv_n, score, strategy, sector, week_date, simulation="Sim1"):
-    """Ajoute un trade fictif."""
+    """Ajoute un trade fictif — toujours charge depuis GitHub avant de sauvegarder."""
+    # Charger la version la plus recente depuis GitHub
     trades = load_paper_trades()
     trade = {
-        "id":           f"{ticker}_{week_date}_{simulation}",
+        "id":           f"{ticker}_{week_date}_{simulation}_{strategy[:2]}_{len(trades)}",
         "ticker":       ticker,
         "week":         week_date,
         "simulation":   simulation,
