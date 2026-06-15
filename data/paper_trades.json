@@ -10,14 +10,14 @@
       "target_price": 14.88,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "C Vendredi",
+      "strategy": "D Stop 3%",
       "sector": "N/A",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:05.338005"
+      "added_at": "2026-06-15T00:32:06.186213"
     }
   ]
 }
