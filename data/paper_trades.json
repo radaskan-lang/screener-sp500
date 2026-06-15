@@ -314,14 +314,14 @@
       "target_price": 55.21,
       "conv_n": 7,
       "score": 100.0,
-      "strategy": "D Stop 3%",
+      "strategy": "E Stop 5%",
       "sector": "Financial Services",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:13.840149"
+      "added_at": "2026-06-15T00:34:14.736561"
     }
   ]
 }
