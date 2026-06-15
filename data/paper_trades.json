@@ -124,14 +124,14 @@
       "target_price": 166.97,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "E Stop 5%",
+      "strategy": "T3 Trailing 3%",
       "sector": "Consumer Cyclical",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:41.389777"
+      "added_at": "2026-06-15T00:32:42.214002"
     }
   ]
 }
