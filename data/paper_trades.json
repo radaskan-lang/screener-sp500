@@ -322,6 +322,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:16.479564"
+    },
+    {
+      "id": "TJX_2026-W25_Sim1",
+      "ticker": "TJX",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 168.92,
+      "stop_price": 163.95,
+      "target_price": 178.87,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:17.347914"
     }
   ]
 }
