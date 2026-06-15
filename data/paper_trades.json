@@ -86,14 +86,14 @@
       "target_price": 156.31,
       "conv_n": 6,
       "score": 100.0,
-      "strategy": "E Stop 5%",
+      "strategy": "T3 Trailing 3%",
       "sector": "Utilities",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:30.372861"
+      "added_at": "2026-06-15T00:32:31.251646"
     }
   ]
 }
