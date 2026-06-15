@@ -303,6 +303,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:10.717710"
+    },
+    {
+      "id": "TFC_2026-W25_Sim1",
+      "ticker": "TFC",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 51.81,
+      "stop_price": 50.11,
+      "target_price": 55.21,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "B +7%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:12.213349"
     }
   ]
 }
