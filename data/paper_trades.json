@@ -143,14 +143,33 @@
       "target_price": 49.03,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "T3 Trailing 3%",
+      "strategy": "T5 Trailing 5%",
       "sector": "Utilities",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:47.708712"
+      "added_at": "2026-06-15T00:32:48.514044"
+    },
+    {
+      "id": "SO_2026-W25_Sim1",
+      "ticker": "SO",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 94.28,
+      "stop_price": 91.56,
+      "target_price": 99.72,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:32:48.926271"
     }
   ]
 }
