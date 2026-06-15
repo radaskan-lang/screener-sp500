@@ -1,25 +1,6 @@
 {
   "paper_trades": [
     {
-      "id": "BRK-B_2026-W25_Sim1",
-      "ticker": "BRK-B",
-      "week": "2026-W25",
-      "simulation": "Sim1",
-      "entry_price": 490.72,
-      "stop_price": 480.55,
-      "target_price": 511.06,
-      "conv_n": 5,
-      "score": 100.0,
-      "strategy": "T5 Trailing 5%",
-      "sector": "N/A",
-      "status": "OPEN",
-      "exit_price": null,
-      "exit_date": null,
-      "pnl_pct": null,
-      "result": null,
-      "added_at": "2026-06-15T00:32:14.572782"
-    },
-    {
       "id": "CCL_2026-W25_Sim1",
       "ticker": "CCL",
       "week": "2026-W25",
@@ -189,6 +170,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:33:05.773523"
+    },
+    {
+      "id": "BRK-B_2026-W25_Sim1",
+      "ticker": "BRK-B",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 490.72,
+      "stop_price": 480.55,
+      "target_price": 511.06,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "B +7%",
+      "sector": "N/A",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:33:07.377212"
     }
   ]
 }
