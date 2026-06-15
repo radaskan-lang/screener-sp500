@@ -265,6 +265,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:33:52.535286"
+    },
+    {
+      "id": "KHC_2026-W25_Sim1",
+      "ticker": "KHC",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 24.46,
+      "stop_price": 23.57,
+      "target_price": 26.24,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Defensive",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:33:53.526781"
     }
   ]
 }
