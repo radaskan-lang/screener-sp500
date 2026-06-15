@@ -257,14 +257,14 @@
       "target_price": 301.24,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "T3 Trailing 3%",
+      "strategy": "T5 Trailing 5%",
       "sector": "Technology",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:33:51.724445"
+      "added_at": "2026-06-15T00:33:52.535286"
     }
   ]
 }
