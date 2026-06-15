@@ -314,14 +314,14 @@
       "target_price": 55.21,
       "conv_n": 7,
       "score": 100.0,
-      "strategy": "E Stop 5%",
+      "strategy": "T3 Trailing 3%",
       "sector": "Financial Services",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:14.736561"
+      "added_at": "2026-06-15T00:34:15.612606"
     }
   ]
 }
