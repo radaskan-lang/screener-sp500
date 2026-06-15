@@ -428,14 +428,14 @@
       "target_price": 29.42,
       "conv_n": 6,
       "score": 100.0,
-      "strategy": "D Stop 3%",
+      "strategy": "E Stop 5%",
       "sector": "N/A",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:51.476814"
+      "added_at": "2026-06-15T00:34:52.354103"
     }
   ]
 }
