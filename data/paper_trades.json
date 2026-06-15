@@ -162,14 +162,14 @@
       "target_price": 99.72,
       "conv_n": 7,
       "score": 100.0,
-      "strategy": "D Stop 3%",
+      "strategy": "E Stop 5%",
       "sector": "Utilities",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:51.016406"
+      "added_at": "2026-06-15T00:32:51.907734"
     }
   ]
 }
