@@ -105,14 +105,14 @@
       "target_price": 72.92,
       "conv_n": 4,
       "score": 100.0,
-      "strategy": "A +5%",
+      "strategy": "C Vendredi",
       "sector": "Technology",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:32.966234"
+      "added_at": "2026-06-15T00:32:34.318494"
     }
   ]
 }
