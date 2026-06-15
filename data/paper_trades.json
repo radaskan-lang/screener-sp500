@@ -113,6 +113,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:32:37.607508"
+    },
+    {
+      "id": "DHI_2026-W25_Sim1",
+      "ticker": "DHI",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 154.55,
+      "stop_price": 148.34,
+      "target_price": 166.97,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Cyclical",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:32:38.425134"
     }
   ]
 }
