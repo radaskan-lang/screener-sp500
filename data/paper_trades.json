@@ -284,6 +284,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:04.570593"
+    },
+    {
+      "id": "USB_2026-W25_Sim1",
+      "ticker": "USB",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 59.12,
+      "stop_price": 57.21,
+      "target_price": 62.95,
+      "conv_n": 7,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Financial Services",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:05.421406"
     }
   ]
 }
