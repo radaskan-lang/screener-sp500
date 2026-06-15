@@ -295,14 +295,14 @@
       "target_price": 62.95,
       "conv_n": 7,
       "score": 100.0,
-      "strategy": "B +7%",
+      "strategy": "C Vendredi",
       "sector": "Financial Services",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:34:06.295650"
+      "added_at": "2026-06-15T00:34:07.202771"
     }
   ]
 }
