@@ -227,6 +227,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:33:41.461118"
+    },
+    {
+      "id": "HPE_2026-W25_Sim1",
+      "ticker": "HPE",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 48.31,
+      "stop_price": 41.84,
+      "target_price": 61.25,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Technology",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:33:42.332154"
     }
   ]
 }
