@@ -436,6 +436,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:54.093080"
+    },
+    {
+      "id": "BAC_2026-W25_Sim1",
+      "ticker": "BAC",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 56.19,
+      "stop_price": 54.45,
+      "target_price": 59.66,
+      "conv_n": 5,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "N/A",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:54.990663"
     }
   ]
 }
