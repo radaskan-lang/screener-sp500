@@ -341,6 +341,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:34:22.728800"
+    },
+    {
+      "id": "TGT_2026-W25_Sim1",
+      "ticker": "TGT",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 135.64,
+      "stop_price": 130.45,
+      "target_price": 146.02,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Consumer Defensive",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:34:23.740158"
     }
   ]
 }
