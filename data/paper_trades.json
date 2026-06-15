@@ -181,14 +181,14 @@
       "target_price": 14.88,
       "conv_n": 5,
       "score": 100.0,
-      "strategy": "A +5%",
+      "strategy": "B +7%",
       "sector": "N/A",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:33:00.963173"
+      "added_at": "2026-06-15T00:33:01.794147"
     }
   ]
 }
