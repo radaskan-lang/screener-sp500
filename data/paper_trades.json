@@ -75,6 +75,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:32:26.167176"
+    },
+    {
+      "id": "DTE_2026-W25_Sim1",
+      "ticker": "DTE",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 147.86,
+      "stop_price": 143.63,
+      "target_price": 156.31,
+      "conv_n": 6,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Utilities",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:32:26.999664"
     }
   ]
 }
