@@ -105,14 +105,14 @@
       "target_price": 72.92,
       "conv_n": 4,
       "score": 100.0,
-      "strategy": "D Stop 3%",
+      "strategy": "E Stop 5%",
       "sector": "Technology",
       "status": "OPEN",
       "exit_price": null,
       "exit_date": null,
       "pnl_pct": null,
       "result": null,
-      "added_at": "2026-06-15T00:32:35.146650"
+      "added_at": "2026-06-15T00:32:35.932993"
     }
   ]
 }
