@@ -94,6 +94,25 @@
       "pnl_pct": null,
       "result": null,
       "added_at": "2026-06-15T00:32:32.081117"
+    },
+    {
+      "id": "ENPH_2026-W25_Sim1",
+      "ticker": "ENPH",
+      "week": "2026-W25",
+      "simulation": "Sim1",
+      "entry_price": 54.75,
+      "stop_price": 45.67,
+      "target_price": 72.92,
+      "conv_n": 4,
+      "score": 100.0,
+      "strategy": "A +5%",
+      "sector": "Technology",
+      "status": "OPEN",
+      "exit_price": null,
+      "exit_date": null,
+      "pnl_pct": null,
+      "result": null,
+      "added_at": "2026-06-15T00:32:32.966234"
     }
   ]
 }
